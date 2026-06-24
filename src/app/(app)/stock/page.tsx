@@ -8,6 +8,20 @@ import { saveCounts, setGlobalMinimum } from "./actions";
 
 type Search = { loc?: string; view?: string; saved?: string };
 
+function timeAgo(iso?: string): string {
+  if (!iso) return "Never counted";
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.round(diff / 60000);
+  if (mins < 1) return "Counted just now";
+  if (mins < 60) return `Counted ${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `Counted ${hrs}h ago`;
+  const days = Math.round(hrs / 24);
+  if (days === 1) return "Counted yesterday";
+  if (days < 7) return `Counted ${days} days ago`;
+  return `Counted ${new Date(iso).toLocaleDateString()}`;
+}
+
 function groupBySupplier(items: InventoryItem[]) {
   const groups = new Map<string, InventoryItem[]>();
   for (const it of items) {
@@ -185,6 +199,18 @@ export default async function StockPage({
   // ------------------------------------------------------------------ COUNT
   const selected = locations.find((l) => l.id === loc) ?? null;
 
+  // Most recent count time per location.
+  const { data: tsData } = await supabase
+    .from("item_stock")
+    .select("location_id, updated_at");
+  const lastCounted = new Map<string, string>();
+  (tsData as { location_id: string; updated_at: string }[] | null)?.forEach(
+    (r) => {
+      const prev = lastCounted.get(r.location_id);
+      if (!prev || r.updated_at > prev) lastCounted.set(r.location_id, r.updated_at);
+    },
+  );
+
   return (
     <div>
       <PageHeader
@@ -201,14 +227,14 @@ export default async function StockPage({
       </div>
 
       {/* Location picker */}
-      <div className="mb-6 flex flex-wrap gap-2">
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {locations.map((l) => {
           const active = selected?.id === l.id;
           return (
             <Link
               key={l.id}
               href={`/stock?view=count&loc=${l.id}`}
-              className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
+              className={`rounded-xl border px-4 py-3 transition-all ${
                 active
                   ? "border-transparent text-white shadow"
                   : "border-border bg-card hover:border-brand-2"
@@ -219,7 +245,10 @@ export default async function StockPage({
                   : undefined
               }
             >
-              {l.name}
+              <div className="font-semibold">{l.name}</div>
+              <div className={`text-xs ${active ? "text-white/80" : "text-muted"}`}>
+                {timeAgo(lastCounted.get(l.id))}
+              </div>
             </Link>
           );
         })}
