@@ -87,6 +87,19 @@ function ItemFields({ item }: { item?: InventoryItem }) {
   );
 }
 
+export function AddItemDialog() {
+  return (
+    <FormDialog
+      trigger="+ Add item"
+      title="Add inventory item"
+      action={createItem}
+      submitLabel="Add item"
+    >
+      <ItemFields />
+    </FormDialog>
+  );
+}
+
 function StockFields({ type }: { type: "restock" | "usage" }) {
   return (
     <>
@@ -139,18 +152,6 @@ export function InventoryTable({
           placeholder="Search items…"
           className="input max-w-xs"
         />
-        {isManager && (
-          <div className="ml-auto">
-            <FormDialog
-              trigger="+ Add item"
-              title="Add inventory item"
-              action={createItem}
-              submitLabel="Add item"
-            >
-              <ItemFields />
-            </FormDialog>
-          </div>
-        )}
       </div>
 
       <div className="card overflow-hidden">

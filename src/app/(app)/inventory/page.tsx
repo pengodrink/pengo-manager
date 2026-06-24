@@ -2,7 +2,7 @@ import { PageHeader, EmptyState } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem } from "@/lib/types";
-import { InventoryTable } from "./inventory-table";
+import { InventoryTable, AddItemDialog } from "./inventory-table";
 
 export default async function InventoryPage() {
   const profile = await requireProfile();
@@ -17,6 +17,7 @@ export default async function InventoryPage() {
   const lowCount = list.filter(
     (i) => i.current_qty <= i.low_stock_threshold,
   ).length;
+  const isManager = profile.role === "manager";
 
   return (
     <div>
@@ -27,6 +28,7 @@ export default async function InventoryPage() {
             ? `${list.length} items · ${lowCount} low on stock`
             : "Track stock levels and log restocks & usage"
         }
+        action={isManager ? <AddItemDialog /> : null}
       />
       {list.length === 0 ? (
         <EmptyState
