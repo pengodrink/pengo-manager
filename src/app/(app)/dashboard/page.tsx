@@ -43,18 +43,21 @@ export default async function DashboardPage() {
           label="Low-stock items"
           value={lowStock.length}
           href="/inventory"
+          icon="⚠️"
           tone={lowStock.length > 0 ? "warn" : "default"}
         />
         <StatCard
           label="Tasks left today"
           value={remainingTasks.length}
           href="/workflow"
+          icon="📋"
           tone={remainingTasks.length > 0 ? "warn" : "default"}
         />
         <StatCard
           label="Items tracked"
           value={items.length}
           href="/inventory"
+          icon="📦"
         />
       </div>
 

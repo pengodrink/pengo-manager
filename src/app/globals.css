@@ -1,13 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f1ea;
-  --foreground: #2a211b;
+  /* Surfaces */
+  --background: #f4efe8; /* warm cream */
+  --foreground: #271c15; /* deep espresso text */
   --card: #ffffff;
-  --border: #e7ddd0;
-  --brand: #6f4e37; /* coffee brown */
-  --brand-dark: #543a28;
-  --muted: #8a7a6b;
+  --border: #e9dfd2;
+  --muted: #93826f;
+
+  /* Brand — rich coffee with a caramel highlight */
+  --brand: #6a4528;
+  --brand-2: #9a6a3f;
+  --brand-dark: #4f331d;
+  --accent: #c98a3d; /* warm amber for small highlights */
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(39, 28, 21, 0.06);
+  --shadow: 0 6px 22px -8px rgba(39, 28, 21, 0.18);
+  --shadow-lg: 0 18px 40px -14px rgba(39, 28, 21, 0.28);
+  --ring: rgba(154, 106, 63, 0.28);
 }
 
 @theme inline {
@@ -16,46 +27,104 @@
   --color-card: var(--card);
   --color-border: var(--border);
   --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
   --color-brand-dark: var(--brand-dark);
+  --color-accent: var(--accent);
   --color-muted: var(--muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
-/* Small shared component classes used across the app. Each is self-contained
-   because Tailwind v4 only lets @apply reference real utilities. */
+body {
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  /* Subtle warm gradient wash so large areas never feel flat. */
+  background-color: var(--background);
+  background-image:
+    radial-gradient(1100px 600px at 100% -5%, rgba(201, 138, 61, 0.10), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgba(106, 69, 40, 0.08), transparent 55%);
+  background-attachment: fixed;
+}
+
+/* Shared component classes. Each is self-contained because Tailwind v4 only
+   lets @apply reference real utilities. */
 @layer components {
   .btn,
   .btn-primary,
   .btn-secondary,
   .btn-danger {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-150 outline-none disabled:pointer-events-none disabled:opacity-50;
   }
+  .btn:focus-visible,
+  .btn-primary:focus-visible,
+  .btn-secondary:focus-visible,
+  .btn-danger:focus-visible {
+    box-shadow: 0 0 0 3px var(--ring);
+  }
+
   .btn-primary {
-    @apply bg-brand text-white hover:bg-brand-dark;
+    color: #fff;
+    background-image: linear-gradient(135deg, var(--brand-2), var(--brand));
+    box-shadow: 0 6px 16px -8px rgba(106, 69, 40, 0.7);
   }
+  .btn-primary:hover {
+    background-image: linear-gradient(135deg, var(--brand), var(--brand-dark));
+    box-shadow: 0 10px 22px -8px rgba(106, 69, 40, 0.75);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active {
+    transform: translateY(0);
+  }
+
   .btn-secondary {
-    @apply border border-border bg-card text-foreground hover:bg-background;
+    @apply border border-border text-foreground;
+    background: color-mix(in srgb, var(--card) 88%, transparent);
+    box-shadow: var(--shadow-sm);
   }
+  .btn-secondary:hover {
+    border-color: color-mix(in srgb, var(--brand-2) 45%, var(--border));
+    background: var(--card);
+    transform: translateY(-1px);
+  }
+
   .btn-danger {
-    @apply border border-red-200 bg-white text-red-600 hover:bg-red-50;
+    @apply border border-red-200 bg-white text-red-600;
   }
+  .btn-danger:hover {
+    @apply bg-red-50;
+    border-color: rgb(252 165 165);
+  }
+
   .card {
-    @apply rounded-xl border border-border bg-card shadow-sm;
+    @apply rounded-2xl border;
+    border-color: var(--border);
+    background: var(--card);
+    box-shadow: var(--shadow-sm);
   }
+
   .input {
-    @apply w-full rounded-lg border border-border bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20;
+    @apply w-full rounded-xl border bg-white px-3.5 py-2.5 text-sm outline-none transition-all;
+    border-color: var(--border);
   }
+  .input::placeholder {
+    color: color-mix(in srgb, var(--muted) 75%, transparent);
+  }
+  .input:focus {
+    border-color: var(--brand-2);
+    box-shadow: 0 0 0 3px var(--ring);
+  }
+
   .label {
-    @apply mb-1 block text-sm font-medium text-foreground;
+    @apply mb-1.5 block text-sm font-medium;
+    color: color-mix(in srgb, var(--foreground) 80%, var(--muted));
   }
+
   .badge {
-    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
 }
