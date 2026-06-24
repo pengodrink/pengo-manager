@@ -52,6 +52,22 @@ export type RecipeIngredient = {
   unit: string | null;
 };
 
+export type Location = {
+  id: string;
+  code: string;
+  name: string;
+  sort_order: number;
+  created_at: string;
+};
+
+export type ItemStock = {
+  id: string;
+  item_id: string;
+  location_id: string;
+  qty: number;
+  updated_at: string;
+};
+
 export type Shift = "opening" | "closing" | "anytime";
 
 export type WorkflowTask = {

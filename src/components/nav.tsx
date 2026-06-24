@@ -10,6 +10,7 @@ const links: { href: string; label: string; icon: string; managerOnly?: boolean 
   [
     { href: "/dashboard", label: "Dashboard", icon: "🏠" },
     { href: "/inventory", label: "Inventory", icon: "📦" },
+    { href: "/stock", label: "Stock Count", icon: "🧮" },
     { href: "/recipes", label: "Recipes", icon: "📖" },
     { href: "/workflow", label: "Workflow", icon: "✅" },
     { href: "/team", label: "Team", icon: "👥", managerOnly: true },

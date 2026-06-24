@@ -1,23 +1,41 @@
 import { PageHeader, EmptyState } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import type { InventoryItem } from "@/lib/types";
+import type { InventoryItem, ItemStock, Location } from "@/lib/types";
 import { InventoryTable, AddItemDialog } from "./inventory-table";
 
 export default async function InventoryPage() {
   const profile = await requireProfile();
+  const isManager = profile.role === "manager";
   const supabase = await createClient();
 
-  const { data: items } = await supabase
-    .from("inventory_items")
-    .select("*")
-    .order("name");
+  const [{ data: itemData }, { data: locationData }, { data: stockData }] =
+    await Promise.all([
+      supabase
+        .from("inventory_items")
+        .select("*")
+        .order("supplier")
+        .order("category")
+        .order("name"),
+      supabase.from("locations").select("*").order("sort_order"),
+      supabase.from("item_stock").select("item_id, location_id, qty"),
+    ]);
 
-  const list = (items ?? []) as InventoryItem[];
+  const list = (itemData ?? []) as InventoryItem[];
+  const locations = (locationData ?? []) as Location[];
+  const stockRows = (stockData ?? []) as Pick<
+    ItemStock,
+    "item_id" | "location_id" | "qty"
+  >[];
+
+  const stock: Record<string, Record<string, number>> = {};
+  for (const s of stockRows) {
+    (stock[s.item_id] ??= {})[s.location_id] = s.qty;
+  }
+
   const lowCount = list.filter(
     (i) => i.current_qty <= i.low_stock_threshold,
   ).length;
-  const isManager = profile.role === "manager";
 
   return (
     <div>
@@ -25,8 +43,8 @@ export default async function InventoryPage() {
         title="Inventory"
         subtitle={
           list.length
-            ? `${list.length} items · ${lowCount} low on stock`
-            : "Track stock levels and log restocks & usage"
+            ? `${list.length} items · ${lowCount} low across ${locations.length} locations`
+            : "Track stock levels across your locations"
         }
         action={isManager ? <AddItemDialog /> : null}
       />
@@ -35,13 +53,18 @@ export default async function InventoryPage() {
           icon="📦"
           title="No items yet"
           hint={
-            profile.role === "manager"
-              ? "Add your first inventory item to start tracking stock."
+            isManager
+              ? "Add an item, or run the 0002 migration to import your spreadsheet."
               : "Ask a manager to add inventory items."
           }
         />
       ) : (
-        <InventoryTable items={list} isManager={profile.role === "manager"} />
+        <InventoryTable
+          items={list}
+          locations={locations}
+          stock={stock}
+          isManager={isManager}
+        />
       )}
     </div>
   );
