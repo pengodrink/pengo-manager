@@ -8,6 +8,11 @@ export function stockStatus(qty: number, threshold: number): StockStatus {
   return "ok";
 }
 
+/** How many units to order to clear the reorder minimum. */
+export function needToOrder(qty: number, threshold: number): number {
+  return Math.max(0, threshold - qty);
+}
+
 export const STATUS_LABEL: Record<StockStatus, string> = {
   out: "Out of stock",
   low: "Reorder",

@@ -3,7 +3,12 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem, ItemStock, Location } from "@/lib/types";
-import { stockStatus, STATUS_LABEL, STATUS_BADGE } from "@/lib/stock";
+import {
+  stockStatus,
+  STATUS_LABEL,
+  STATUS_BADGE,
+  needToOrder,
+} from "@/lib/stock";
 
 export default async function ItemDetailPage({
   params,
@@ -34,6 +39,7 @@ export default async function ItemDetailPage({
   );
 
   const status = stockStatus(i.current_qty, i.low_stock_threshold);
+  const need = needToOrder(i.current_qty, i.low_stock_threshold);
 
   return (
     <div className="space-y-6">
@@ -79,6 +85,36 @@ export default async function ItemDetailPage({
             </dd>
           </div>
         </dl>
+      </div>
+
+      {/* Need to order — prominent, with current shown smaller alongside */}
+      <div
+        className={`card flex items-end gap-5 p-6 ${
+          need > 0 ? "border-2" : ""
+        }`}
+        style={need > 0 ? { borderColor: "var(--red)" } : undefined}
+      >
+        <div>
+          <div className="text-sm font-semibold text-muted">Need to order</div>
+          <div
+            className={`text-5xl font-extrabold tabular-nums ${
+              need > 0 ? "text-red" : "text-green"
+            }`}
+          >
+            {need} <span className="text-2xl font-bold">{i.unit}</span>
+          </div>
+        </div>
+        <div className="pb-1">
+          <div className="text-xs text-muted">current in stock</div>
+          <div className="text-lg font-semibold tabular-nums text-muted">
+            {i.current_qty} {i.unit}
+          </div>
+        </div>
+        {need === 0 && (
+          <div className="ml-auto pb-2 text-sm font-medium text-green">
+            ✓ Above the reorder minimum
+          </div>
+        )}
       </div>
 
       <div>
