@@ -16,6 +16,7 @@ export type InventoryItem = {
   unit: string;
   current_qty: number;
   low_stock_threshold: number;
+  full_level: number;
   cost_per_unit: number | null;
   supplier: string | null;
   updated_at: string;

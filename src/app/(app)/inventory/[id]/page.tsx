@@ -9,8 +9,7 @@ import {
   STATUS_BADGE,
   needToOrder,
 } from "@/lib/stock";
-import { FormDialog } from "@/components/form-dialog";
-import { setLocationStock } from "@/app/(app)/stock/actions";
+import { LocationCard } from "./location-card";
 
 export default async function ItemDetailPage({
   params,
@@ -122,52 +121,23 @@ export default async function ItemDetailPage({
       <div>
         <h2 className="mb-1 text-lg font-semibold">By location</h2>
         <p className="mb-3 text-sm text-muted">
-          Tap a location to restock — enter the new count.
+          Tap a location to enter a count · double-tap to fill it to{" "}
+          {i.full_level}.
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {locations.map((l) => {
             const s = stock.get(l.id);
             return (
-              <FormDialog
+              <LocationCard
                 key={l.id}
-                title={`Restock ${i.name} — ${l.name}`}
-                action={setLocationStock}
-                submitLabel="Save count"
-                triggerClassName="card p-5 text-left w-full cursor-pointer transition-colors hover:border-brand-2"
-                trigger={
-                  <div className="w-full">
-                    <div className="text-sm text-muted">{l.name}</div>
-                    <div className="mt-1 text-2xl font-bold tabular-nums">
-                      {s?.qty ?? 0}{" "}
-                      <span className="text-base font-normal text-muted">
-                        {i.unit}
-                      </span>
-                    </div>
-                    {s?.updated_at && (
-                      <div className="mt-1 text-xs text-muted">
-                        Updated {new Date(s.updated_at).toLocaleDateString()}
-                      </div>
-                    )}
-                  </div>
-                }
-              >
-                <input type="hidden" name="item_id" value={i.id} />
-                <input type="hidden" name="location_id" value={l.id} />
-                <div>
-                  <label className="label">
-                    New count at {l.name} ({i.unit})
-                  </label>
-                  <input
-                    name="qty"
-                    type="number"
-                    min="0"
-                    step="any"
-                    defaultValue={s?.qty ?? 0}
-                    autoFocus
-                    className="input text-lg"
-                  />
-                </div>
-              </FormDialog>
+                itemId={i.id}
+                unit={i.unit}
+                locationId={l.id}
+                locationName={l.name}
+                qty={s?.qty ?? 0}
+                updatedAt={s?.updated_at ?? null}
+                fullLevel={i.full_level}
+              />
             );
           })}
         </div>

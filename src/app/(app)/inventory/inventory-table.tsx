@@ -58,6 +58,21 @@ function ItemFields({ item }: { item?: InventoryItem }) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
+          <label className="label">Full level (per location)</label>
+          <input
+            name="full_level"
+            type="number"
+            step="any"
+            defaultValue={item?.full_level ?? 6}
+            className="input"
+          />
+          <p className="mt-1 text-xs text-muted">
+            Double-tap a location fills it to this.
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
           <label className="label">Cost per unit</label>
           <input
             name="cost_per_unit"

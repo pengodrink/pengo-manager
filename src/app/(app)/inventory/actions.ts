@@ -23,6 +23,7 @@ export async function createItem(formData: FormData) {
     category: str(formData.get("category")),
     unit: String(formData.get("unit") ?? "Unit").trim() || "Unit",
     low_stock_threshold: num(formData.get("low_stock_threshold"), 3),
+    full_level: num(formData.get("full_level"), 6),
     cost_per_unit: formData.get("cost_per_unit")
       ? num(formData.get("cost_per_unit"))
       : null,
@@ -46,6 +47,7 @@ export async function updateItem(formData: FormData) {
       category: str(formData.get("category")),
       unit: String(formData.get("unit") ?? "Unit").trim() || "Unit",
       low_stock_threshold: num(formData.get("low_stock_threshold"), 3),
+      full_level: num(formData.get("full_level"), 6),
       cost_per_unit: formData.get("cost_per_unit")
         ? num(formData.get("cost_per_unit"))
         : null,
