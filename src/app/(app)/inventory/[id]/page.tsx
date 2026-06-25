@@ -9,6 +9,8 @@ import {
   STATUS_BADGE,
   needToOrder,
 } from "@/lib/stock";
+import { FormDialog } from "@/components/form-dialog";
+import { setLocationStock } from "@/app/(app)/stock/actions";
 
 export default async function ItemDetailPage({
   params,
@@ -118,33 +120,57 @@ export default async function ItemDetailPage({
       </div>
 
       <div>
-        <h2 className="mb-3 text-lg font-semibold">By location</h2>
+        <h2 className="mb-1 text-lg font-semibold">By location</h2>
+        <p className="mb-3 text-sm text-muted">
+          Tap a location to restock — enter the new count.
+        </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {locations.map((l) => {
             const s = stock.get(l.id);
             return (
-              <div key={l.id} className="card p-5">
-                <div className="text-sm text-muted">{l.name}</div>
-                <div className="mt-1 text-2xl font-bold tabular-nums">
-                  {s?.qty ?? 0}{" "}
-                  <span className="text-base font-normal text-muted">{i.unit}</span>
-                </div>
-                {s?.updated_at && (
-                  <div className="mt-1 text-xs text-muted">
-                    Updated {new Date(s.updated_at).toLocaleDateString()}
+              <FormDialog
+                key={l.id}
+                title={`Restock ${i.name} — ${l.name}`}
+                action={setLocationStock}
+                submitLabel="Save count"
+                triggerClassName="card p-5 text-left w-full cursor-pointer transition-colors hover:border-brand-2"
+                trigger={
+                  <div className="w-full">
+                    <div className="text-sm text-muted">{l.name}</div>
+                    <div className="mt-1 text-2xl font-bold tabular-nums">
+                      {s?.qty ?? 0}{" "}
+                      <span className="text-base font-normal text-muted">
+                        {i.unit}
+                      </span>
+                    </div>
+                    {s?.updated_at && (
+                      <div className="mt-1 text-xs text-muted">
+                        Updated {new Date(s.updated_at).toLocaleDateString()}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                }
+              >
+                <input type="hidden" name="item_id" value={i.id} />
+                <input type="hidden" name="location_id" value={l.id} />
+                <div>
+                  <label className="label">
+                    New count at {l.name} ({i.unit})
+                  </label>
+                  <input
+                    name="qty"
+                    type="number"
+                    min="0"
+                    step="any"
+                    defaultValue={s?.qty ?? 0}
+                    autoFocus
+                    className="input text-lg"
+                  />
+                </div>
+              </FormDialog>
             );
           })}
         </div>
-        <p className="mt-3 text-sm text-muted">
-          Update these on the{" "}
-          <Link href="/stock" className="font-medium text-brand">
-            Stock Count
-          </Link>{" "}
-          page.
-        </p>
       </div>
     </div>
   );

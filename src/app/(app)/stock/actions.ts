@@ -109,6 +109,29 @@ export async function saveItemCounts(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+/** Set one item's stock at one location (used by the item page restock popup). */
+export async function setLocationStock(formData: FormData) {
+  await requireProfile();
+  const supabase = await createClient();
+
+  const itemId = String(formData.get("item_id"));
+  const locationId = String(formData.get("location_id"));
+  const n = Number(formData.get("qty"));
+  const qty = Number.isFinite(n) ? Math.max(0, n) : 0;
+
+  const { error } = await supabase
+    .from("item_stock")
+    .upsert([{ item_id: itemId, location_id: locationId, qty }], {
+      onConflict: "item_id,location_id",
+    });
+  if (error) throw new Error(error.message);
+
+  revalidatePath(`/inventory/${itemId}`);
+  revalidatePath("/inventory");
+  revalidatePath("/stock");
+  revalidatePath("/dashboard");
+}
+
 /** Manager: set the global reorder minimum (applied to every item). */
 export async function setGlobalMinimum(formData: FormData) {
   await requireManager();
