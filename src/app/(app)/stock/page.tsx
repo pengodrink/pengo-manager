@@ -1,12 +1,21 @@
 import Link from "next/link";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
+import { PrintButton } from "@/components/print-button";
+import { CopyButton } from "@/components/copy-button";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem, ItemStock, Location } from "@/lib/types";
 import { saveCounts, setGlobalMinimum } from "./actions";
 
 type Search = { loc?: string; view?: string; saved?: string };
+
+const STALE_DAYS = 7;
+
+function isStale(iso?: string): boolean {
+  if (!iso) return true;
+  return Date.now() - new Date(iso).getTime() > STALE_DAYS * 86400000;
+}
 
 function timeAgo(iso?: string): string {
   if (!iso) return "Never counted";
@@ -105,8 +114,19 @@ export default async function StockPage({
         <PageHeader
           title="Stock Count"
           subtitle="What needs reordering across all locations"
+          action={
+            low.length > 0 ? (
+              <div className="no-print">
+                <PrintButton>🖨️ Print order list</PrintButton>
+              </div>
+            ) : null
+          }
         />
-        <div className="mb-5 flex flex-wrap items-center gap-2">
+        <div className="mb-1 hidden text-sm text-muted print:block">
+          Reorder list · {new Date().toLocaleDateString()} · items with total ≤{" "}
+          {currentMin}
+        </div>
+        <div className="no-print mb-5 flex flex-wrap items-center gap-2">
           {tab("count", "Enter counts")}
           {tab("reorder", "Reorder report")}
         </div>
@@ -114,7 +134,7 @@ export default async function StockPage({
         {isManager && (
           <form
             action={setGlobalMinimum}
-            className="card mb-5 flex flex-wrap items-end gap-3 p-4"
+            className="no-print card mb-5 flex flex-wrap items-end gap-3 p-4"
           >
             <div>
               <label className="label">Flag as low when total is at or below</label>
@@ -140,11 +160,21 @@ export default async function StockPage({
           />
         ) : (
           <div className="space-y-6">
-            {groupBySupplier(low).map(([supplier, list]) => (
+            {groupBySupplier(low).map(([supplier, list]) => {
+              const copyText = [
+                `${supplier} order — ${new Date().toLocaleDateString()}`,
+                ...list.map((it) => `${it.name}: ${it.current_qty} ${it.unit}`),
+              ].join("\n");
+              return (
               <section key={supplier}>
-                <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
-                  {supplier} · {list.length} to order
-                </h2>
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">
+                    {supplier} · {list.length} to order
+                  </h2>
+                  <div className="no-print">
+                    <CopyButton text={copyText} />
+                  </div>
+                </div>
                 <div className="card overflow-hidden">
                   <table className="w-full text-sm">
                     <thead className="bg-background text-left text-muted">
@@ -189,7 +219,8 @@ export default async function StockPage({
                   </table>
                 </div>
               </section>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -230,6 +261,8 @@ export default async function StockPage({
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {locations.map((l) => {
           const active = selected?.id === l.id;
+          const ts = lastCounted.get(l.id);
+          const stale = isStale(ts);
           return (
             <Link
               key={l.id}
@@ -237,7 +270,9 @@ export default async function StockPage({
               className={`rounded-xl border px-4 py-3 transition-all ${
                 active
                   ? "border-transparent text-white shadow"
-                  : "border-border bg-card hover:border-brand-2"
+                  : stale
+                    ? "border-amber-300 bg-amber-50 hover:border-amber-400"
+                    : "border-border bg-card hover:border-brand-2"
               }`}
               style={
                 active
@@ -246,8 +281,17 @@ export default async function StockPage({
               }
             >
               <div className="font-semibold">{l.name}</div>
-              <div className={`text-xs ${active ? "text-white/80" : "text-muted"}`}>
-                {timeAgo(lastCounted.get(l.id))}
+              <div
+                className={`text-xs ${
+                  active
+                    ? "text-white/80"
+                    : stale
+                      ? "font-medium text-amber-700"
+                      : "text-muted"
+                }`}
+              >
+                {stale && "⚠️ "}
+                {timeAgo(ts)}
               </div>
             </Link>
           );

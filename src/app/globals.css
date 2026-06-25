@@ -128,3 +128,23 @@ body {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
   }
 }
+
+/* Print: show only the report content, drop chrome and color washes. */
+@media print {
+  body {
+    background: #fff !important;
+  }
+  header,
+  .no-print {
+    display: none !important;
+  }
+  main {
+    max-width: none !important;
+    padding: 0 !important;
+  }
+  .card {
+    box-shadow: none !important;
+    border-color: #ccc !important;
+    break-inside: avoid;
+  }
+}
