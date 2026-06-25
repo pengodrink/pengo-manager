@@ -117,14 +117,21 @@ export default async function StockPage({
       byItem.get(s.item_id)!.set(s.location_id, s.qty);
     }
 
-    const low = items.filter((i) => i.current_qty <= i.low_stock_threshold);
+    const low = items
+      .filter((i) => i.current_qty <= i.low_stock_threshold)
+      .sort((a, b) => a.current_qty - b.current_qty); // out of stock first
+    const outCount = low.filter((i) => i.current_qty <= 0).length;
     const currentMin = items.length ? items[0].low_stock_threshold : 3;
 
     return (
       <div>
         <PageHeader
           title="Stock Count"
-          subtitle="What needs reordering across all locations"
+          subtitle={
+            outCount > 0
+              ? `${outCount} out of stock · ${low.length} to reorder`
+              : "What needs reordering across all locations"
+          }
           action={
             low.length > 0 ? (
               <div className="no-print">

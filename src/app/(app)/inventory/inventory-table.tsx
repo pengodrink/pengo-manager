@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { FormDialog } from "@/components/form-dialog";
 import { ConfirmButton } from "@/components/confirm-button";
 import type { InventoryItem, Location } from "@/lib/types";
+import { stockStatus, STATUS_LABEL, STATUS_BADGE } from "@/lib/stock";
 import { createItem, updateItem, deleteItem } from "./actions";
 
 function ItemFields({ item }: { item?: InventoryItem }) {
@@ -140,7 +141,10 @@ export function InventoryTable({
           </thead>
           <tbody>
             {filtered.map((item) => {
-              const low = item.current_qty <= item.low_stock_threshold;
+              const status = stockStatus(
+                item.current_qty,
+                item.low_stock_threshold,
+              );
               const perLoc = stock[item.id] ?? {};
               return (
                 <tr key={item.id} className="border-t border-border">
@@ -164,15 +168,18 @@ export function InventoryTable({
                       {perLoc[l.id] ?? 0}
                     </td>
                   ))}
-                  <td className="px-3 py-2.5 text-right font-semibold tabular-nums">
+                  <td
+                    className={`px-3 py-2.5 text-right font-semibold tabular-nums ${
+                      status === "out" ? "text-red" : ""
+                    }`}
+                  >
                     {item.current_qty}
                   </td>
                   <td className="px-3 py-2.5">
-                    {low ? (
-                      <span className="badge bg-amber-100 text-amber-700">Reorder</span>
-                    ) : (
-                      <span className="badge bg-green-100 text-green-700">OK</span>
-                    )}
+                    <span className={`badge ${STATUS_BADGE[status]}`}>
+                      {status === "out" && "⛔ "}
+                      {STATUS_LABEL[status]}
+                    </span>
                   </td>
                   {isManager && (
                     <td className="px-4 py-2.5">

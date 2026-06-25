@@ -23,6 +23,7 @@ export function ReorderRow({
 
   const total = locations.reduce((sum, l) => sum + (Number(vals[l.id]) || 0), 0);
   const stillLow = total <= item.low_stock_threshold;
+  const out = total <= 0;
 
   function save() {
     const fd = new FormData();
@@ -39,6 +40,9 @@ export function ReorderRow({
     <tr className="border-t border-border">
       <td className="px-4 py-2.5">
         <span className="font-semibold">{item.name}</span>
+        {out && (
+          <span className="ml-2 badge bg-red-100 text-red-700">⛔ Out</span>
+        )}
         {item.category && (
           <span className="ml-2 text-xs text-muted">{item.category}</span>
         )}

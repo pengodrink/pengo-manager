@@ -23,9 +23,12 @@ export default async function DashboardPage() {
   const tasks = (taskData ?? []) as WorkflowTask[];
   const completions = (completionData ?? []) as Pick<TaskCompletion, "task_id">[];
 
+  const outOfStock = items.filter((i) => i.current_qty <= 0);
   const lowStock = items.filter(
-    (i) => i.current_qty <= i.low_stock_threshold,
+    (i) => i.current_qty > 0 && i.current_qty <= i.low_stock_threshold,
   );
+  // Out-of-stock first (most urgent), then low.
+  const needsAttention = [...outOfStock, ...lowStock];
   const doneIds = new Set(completions.map((c) => c.task_id));
   const remainingTasks = tasks.filter((t) => !doneIds.has(t.id));
 
@@ -38,32 +41,57 @@ export default async function DashboardPage() {
         subtitle="Here's what needs attention today"
       />
 
-      {lowStock.length > 0 && (
+      {outOfStock.length > 0 && (
         <Link
           href="/stock?view=reorder"
-          className="mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 transition-colors hover:bg-red-100"
+          className="mb-3 flex items-center gap-3 rounded-2xl border-2 border-red-300 bg-red-50 px-5 py-4 transition-colors hover:bg-red-100"
         >
-          <span className="text-2xl">🔔</span>
+          <span className="text-2xl">⛔</span>
           <div className="flex-1">
-            <div className="font-bold text-red-700">
-              {lowStock.length} item{lowStock.length === 1 ? "" : "s"} low on stock
+            <div className="font-extrabold text-red-700">
+              URGENT — {outOfStock.length} item{outOfStock.length === 1 ? " is" : "s are"} OUT of stock
             </div>
             <div className="text-sm text-red-600">
-              Tap to open the reorder report and restock.
+              Tap to open the reorder report and restock now.
             </div>
           </div>
           <span className="text-red-400">→</span>
         </Link>
       )}
 
-      <div className="mb-8 grid gap-4 sm:grid-cols-3">
+      {lowStock.length > 0 && (
+        <Link
+          href="/stock?view=reorder"
+          className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 transition-colors hover:bg-amber-100"
+        >
+          <span className="text-2xl">⚠️</span>
+          <div className="flex-1">
+            <div className="font-bold text-amber-700">
+              {lowStock.length} item{lowStock.length === 1 ? "" : "s"} low on stock
+            </div>
+            <div className="text-sm text-amber-600">
+              Running low — reorder soon.
+            </div>
+          </div>
+          <span className="text-amber-400">→</span>
+        </Link>
+      )}
+
+      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Low-stock items"
-          value={lowStock.length}
+          label="Out of stock"
+          value={outOfStock.length}
           href="/inventory"
+          icon="⛔"
+          accent={outOfStock.length > 0 ? "red" : "green"}
+          tone={outOfStock.length > 0 ? "warn" : "default"}
+        />
+        <StatCard
+          label="Low / reorder"
+          value={lowStock.length}
+          href="/stock?view=reorder"
           icon="⚠️"
-          accent={lowStock.length > 0 ? "red" : "green"}
-          tone={lowStock.length > 0 ? "warn" : "default"}
+          accent={lowStock.length > 0 ? "gold" : "green"}
         />
         <StatCard
           label="Tasks left today"
@@ -84,29 +112,38 @@ export default async function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2">
         <section>
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="font-semibold">⚠️ Low on stock</h2>
-            <Link href="/inventory" className="text-sm text-brand">
-              View all
+            <h2 className="font-semibold">⚠️ Needs attention</h2>
+            <Link href="/stock?view=reorder" className="text-sm text-brand">
+              Reorder report
             </Link>
           </div>
           <div className="card divide-y divide-border">
-            {lowStock.length === 0 ? (
+            {needsAttention.length === 0 ? (
               <p className="p-4 text-sm text-muted">
                 Everything is well stocked. 🎉
               </p>
             ) : (
-              lowStock.slice(0, 8).map((i) => (
-                <Link
-                  key={i.id}
-                  href={`/inventory/${i.id}`}
-                  className="flex items-center justify-between p-4 hover:bg-background"
-                >
-                  <span className="font-medium">{i.name}</span>
-                  <span className="badge bg-amber-100 text-amber-700 tabular-nums">
-                    {i.current_qty} {i.unit} left
-                  </span>
-                </Link>
-              ))
+              needsAttention.slice(0, 10).map((i) => {
+                const out = i.current_qty <= 0;
+                return (
+                  <Link
+                    key={i.id}
+                    href={`/inventory/${i.id}`}
+                    className="flex items-center justify-between p-4 hover:bg-background"
+                  >
+                    <span className="font-medium">{i.name}</span>
+                    <span
+                      className={`badge tabular-nums ${
+                        out
+                          ? "bg-red-100 text-red-700"
+                          : "bg-amber-100 text-amber-700"
+                      }`}
+                    >
+                      {out ? "⛔ Out of stock" : `${i.current_qty} ${i.unit} left`}
+                    </span>
+                  </Link>
+                );
+              })
             )}
           </div>
         </section>

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem, ItemStock, Location } from "@/lib/types";
+import { stockStatus, STATUS_LABEL, STATUS_BADGE } from "@/lib/stock";
 
 export default async function ItemDetailPage({
   params,
@@ -32,7 +33,7 @@ export default async function ItemDetailPage({
     (s) => stock.set(s.location_id, { qty: s.qty, updated_at: s.updated_at }),
   );
 
-  const low = i.current_qty <= i.low_stock_threshold;
+  const status = stockStatus(i.current_qty, i.low_stock_threshold);
 
   return (
     <div className="space-y-6">
@@ -48,11 +49,10 @@ export default async function ItemDetailPage({
               {[i.supplier, i.category].filter(Boolean).join(" · ") || "Uncategorized"}
             </p>
           </div>
-          {low ? (
-            <span className="badge bg-amber-100 text-amber-700">Reorder</span>
-          ) : (
-            <span className="badge bg-green-100 text-green-700">OK</span>
-          )}
+          <span className={`badge ${STATUS_BADGE[status]}`}>
+            {status === "out" && "⛔ "}
+            {STATUS_LABEL[status]}
+          </span>
         </div>
 
         <dl className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
