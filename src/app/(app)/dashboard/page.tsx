@@ -42,39 +42,77 @@ export default async function DashboardPage() {
       />
 
       {outOfStock.length > 0 && (
-        <Link
-          href="/stock?view=reorder"
-          className="mb-3 flex items-center gap-3 rounded-2xl border-2 border-red-300 bg-red-50 px-5 py-4 transition-colors hover:bg-red-100"
-        >
-          <span className="text-2xl">⛔</span>
-          <div className="flex-1">
-            <div className="font-extrabold text-red-700">
-              URGENT — {outOfStock.length} item{outOfStock.length === 1 ? " is" : "s are"} OUT of stock
+        <details className="group mb-3">
+          <summary className="flex cursor-pointer list-none items-center gap-3 rounded-2xl border-2 border-red-300 bg-red-50 px-5 py-4 transition-colors hover:bg-red-100 [&::-webkit-details-marker]:hidden">
+            <span className="text-2xl">⛔</span>
+            <div className="flex-1">
+              <div className="font-extrabold text-red-700">
+                URGENT — {outOfStock.length} item{outOfStock.length === 1 ? " is" : "s are"} OUT of stock
+              </div>
+              <div className="text-sm text-red-600">
+                Tap to see the list and restock.
+              </div>
             </div>
-            <div className="text-sm text-red-600">
-              Tap to open the reorder report and restock now.
-            </div>
+            <span className="text-red-400 transition-transform group-open:rotate-180">
+              ▾
+            </span>
+          </summary>
+          <div className="card mt-2 max-h-96 divide-y divide-border overflow-y-auto">
+            {outOfStock.map((i) => (
+              <Link
+                key={i.id}
+                href={`/inventory/${i.id}`}
+                className="flex items-center justify-between p-4 hover:bg-background"
+              >
+                <span className="font-medium">
+                  {i.name}
+                  {i.supplier && (
+                    <span className="ml-2 text-xs text-muted">{i.supplier}</span>
+                  )}
+                </span>
+                <span className="badge bg-red-100 text-red-700">⛔ Out of stock</span>
+              </Link>
+            ))}
           </div>
-          <span className="text-red-400">→</span>
-        </Link>
+        </details>
       )}
 
       {lowStock.length > 0 && (
-        <Link
-          href="/stock?view=reorder"
-          className="mb-6 flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 transition-colors hover:bg-amber-100"
-        >
-          <span className="text-2xl">⚠️</span>
-          <div className="flex-1">
-            <div className="font-bold text-amber-700">
-              {lowStock.length} item{lowStock.length === 1 ? "" : "s"} low on stock
+        <details className="group mb-6">
+          <summary className="flex cursor-pointer list-none items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 transition-colors hover:bg-amber-100 [&::-webkit-details-marker]:hidden">
+            <span className="text-2xl">⚠️</span>
+            <div className="flex-1">
+              <div className="font-bold text-amber-700">
+                {lowStock.length} item{lowStock.length === 1 ? "" : "s"} low on stock
+              </div>
+              <div className="text-sm text-amber-600">
+                Tap to see the list — running low.
+              </div>
             </div>
-            <div className="text-sm text-amber-600">
-              Running low — reorder soon.
-            </div>
+            <span className="text-amber-400 transition-transform group-open:rotate-180">
+              ▾
+            </span>
+          </summary>
+          <div className="card mt-2 max-h-96 divide-y divide-border overflow-y-auto">
+            {lowStock.map((i) => (
+              <Link
+                key={i.id}
+                href={`/inventory/${i.id}`}
+                className="flex items-center justify-between p-4 hover:bg-background"
+              >
+                <span className="font-medium">
+                  {i.name}
+                  {i.supplier && (
+                    <span className="ml-2 text-xs text-muted">{i.supplier}</span>
+                  )}
+                </span>
+                <span className="badge bg-amber-100 text-amber-700 tabular-nums">
+                  {i.current_qty} {i.unit} left
+                </span>
+              </Link>
+            ))}
           </div>
-          <span className="text-amber-400">→</span>
-        </Link>
+        </details>
       )}
 
       <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
