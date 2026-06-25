@@ -8,6 +8,43 @@ import type { Recipe, RecipeIngredient } from "@/lib/types";
 import { RecipeFields } from "../recipe-fields";
 import { updateRecipe, deleteRecipe } from "../actions";
 
+// A recipe line is either a normal ingredient/step (bullet) or a note
+// (wrapped in ** or parentheses in the source).
+function RecipeLines({ lines }: { lines: string[] }) {
+  return (
+    <ul className="space-y-2 text-[15px]">
+      {lines.map((ln, i) => {
+        const note = ln.startsWith("**") || ln.startsWith("(");
+        const text = ln.replace(/\*\*/g, "").trim();
+        return note ? (
+          <li key={i} className="rounded-lg bg-amber-50 px-3 py-1.5 text-sm text-amber-700">
+            💡 {text.replace(/^\(|\)$/g, "")}
+          </li>
+        ) : (
+          <li key={i} className="flex gap-2.5">
+            <span className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-gold-dark" />
+            <span>{text}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function parseRecipe(instr: string) {
+  const all = instr.split("\n").map((s) => s.trim());
+  const sIdx = all.indexOf("SMALL");
+  const lIdx = all.indexOf("LARGE");
+  if (sIdx !== -1 && lIdx !== -1 && lIdx > sIdx) {
+    return {
+      type: "two" as const,
+      small: all.slice(sIdx + 1, lIdx).filter(Boolean),
+      large: all.slice(lIdx + 1).filter(Boolean),
+    };
+  }
+  return { type: "one" as const, lines: all.filter(Boolean) };
+}
+
 export default async function RecipeDetailPage({
   params,
 }: {
@@ -37,6 +74,10 @@ export default async function RecipeDetailPage({
     .split("\n")
     .map((s) => s.trim())
     .filter(Boolean);
+
+  // Drinks imported from the recipe book have no separate ingredient rows —
+  // render their instructions as clean Small/Large recipe cards instead.
+  const parsed = ingredients.length === 0 ? parseRecipe(r.instructions ?? "") : null;
 
   return (
     <div className="space-y-6">
@@ -81,38 +122,66 @@ export default async function RecipeDetailPage({
         {r.description && <p className="mt-2 text-foreground">{r.description}</p>}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <div className="card p-5 md:col-span-1">
-          <h2 className="mb-3 font-semibold">Ingredients</h2>
-          {ingredients.length === 0 ? (
-            <p className="text-sm text-muted">No ingredients listed.</p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {ingredients.map((i) => (
-                <li key={i.id} className="flex justify-between gap-2">
-                  <span>{i.name}</span>
-                  <span className="text-muted tabular-nums">
-                    {i.quantity ?? ""} {i.unit ?? ""}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      {parsed ? (
+        parsed.type === "two" ? (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="card p-5">
+              <span className="badge mb-3 inline-block bg-sky/15 text-sky">
+                SMALL
+              </span>
+              <RecipeLines lines={parsed.small} />
+            </div>
+            <div className="card p-5">
+              <span
+                className="badge mb-3 inline-block text-white"
+                style={{ backgroundColor: "var(--navy)" }}
+              >
+                LARGE
+              </span>
+              <RecipeLines lines={parsed.large} />
+            </div>
+          </div>
+        ) : (
+          <div className="card p-6">
+            <h2 className="mb-1 font-semibold">Recipe</h2>
+            <p className="mb-3 text-xs text-muted">Same for Small &amp; Large</p>
+            <RecipeLines lines={parsed.lines} />
+          </div>
+        )
+      ) : (
+        <div className="grid gap-6 md:grid-cols-3">
+          <div className="card p-5 md:col-span-1">
+            <h2 className="mb-3 font-semibold">Ingredients</h2>
+            {ingredients.length === 0 ? (
+              <p className="text-sm text-muted">No ingredients listed.</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {ingredients.map((i) => (
+                  <li key={i.id} className="flex justify-between gap-2">
+                    <span>{i.name}</span>
+                    <span className="text-muted tabular-nums">
+                      {i.quantity ?? ""} {i.unit ?? ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-        <div className="card p-5 md:col-span-2">
-          <h2 className="mb-3 font-semibold">Steps</h2>
-          {steps.length === 0 ? (
-            <p className="text-sm text-muted">No steps added.</p>
-          ) : (
-            <ol className="list-decimal space-y-2 pl-5 text-sm">
-              {steps.map((s, idx) => (
-                <li key={idx}>{s}</li>
-              ))}
-            </ol>
-          )}
+          <div className="card p-5 md:col-span-2">
+            <h2 className="mb-3 font-semibold">Steps</h2>
+            {steps.length === 0 ? (
+              <p className="text-sm text-muted">No steps added.</p>
+            ) : (
+              <ol className="list-decimal space-y-2 pl-5 text-sm">
+                {steps.map((s, idx) => (
+                  <li key={idx}>{s}</li>
+                ))}
+              </ol>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
