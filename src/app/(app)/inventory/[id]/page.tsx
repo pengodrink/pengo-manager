@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { BackButton } from "@/components/back-button";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem, ItemStock, Location } from "@/lib/types";
@@ -44,9 +44,7 @@ export default async function ItemDetailPage({
 
   return (
     <div className="space-y-6">
-      <Link href="/inventory" className="text-sm text-muted hover:text-brand">
-        ← Back to inventory
-      </Link>
+      <BackButton fallback="/inventory" />
 
       <div className="card p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
