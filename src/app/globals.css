@@ -1,24 +1,28 @@
 @import "tailwindcss";
 
 :root {
-  /* Surfaces */
-  --background: #f4efe8; /* warm cream */
-  --foreground: #271c15; /* deep espresso text */
+  /* Surfaces — airy, light, playful */
+  --background: #eef3fb;
+  --foreground: #1a2540; /* deep navy-ink text */
   --card: #ffffff;
-  --border: #e9dfd2;
-  --muted: #93826f;
+  --border: #dce5f2;
+  --muted: #6c7a96;
 
-  /* Brand — rich coffee with a caramel highlight */
-  --brand: #6a4528;
-  --brand-2: #9a6a3f;
-  --brand-dark: #4f331d;
-  --accent: #c98a3d; /* warm amber for small highlights */
+  /* Pengo brand (from the logo) */
+  --navy: #16264c;
+  --navy-2: #244177;
+  --gold: #ffce1f;
+  --gold-2: #ffdd5c;
+  --gold-dark: #eeb000;
+  --red: #e8362c;
+  --green: #57b85b;
+  --sky: #3aa0e3;
 
   /* Elevation */
-  --shadow-sm: 0 1px 2px rgba(39, 28, 21, 0.06);
-  --shadow: 0 6px 22px -8px rgba(39, 28, 21, 0.18);
-  --shadow-lg: 0 18px 40px -14px rgba(39, 28, 21, 0.28);
-  --ring: rgba(154, 106, 63, 0.28);
+  --shadow-sm: 0 1px 2px rgba(22, 38, 76, 0.07);
+  --shadow: 0 8px 24px -10px rgba(22, 38, 76, 0.22);
+  --shadow-lg: 0 22px 48px -16px rgba(22, 38, 76, 0.34);
+  --ring: rgba(58, 160, 227, 0.4);
 }
 
 @theme inline {
@@ -26,11 +30,18 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-border: var(--border);
-  --color-brand: var(--brand);
-  --color-brand-2: var(--brand-2);
-  --color-brand-dark: var(--brand-dark);
-  --color-accent: var(--accent);
   --color-muted: var(--muted);
+  --color-navy: var(--navy);
+  --color-navy-2: var(--navy-2);
+  --color-gold: var(--gold);
+  --color-gold-dark: var(--gold-dark);
+  --color-red: var(--red);
+  --color-green: var(--green);
+  --color-sky: var(--sky);
+  /* Keep a "brand" alias so existing brand-* utilities map to navy. */
+  --color-brand: var(--navy);
+  --color-brand-2: var(--navy-2);
+  --color-brand-dark: var(--navy);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -43,22 +54,22 @@ html {
 body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
-  /* Subtle warm gradient wash so large areas never feel flat. */
+  /* Playful multi-color gradient wash in the brand colors. */
   background-color: var(--background);
   background-image:
-    radial-gradient(1100px 600px at 100% -5%, rgba(201, 138, 61, 0.10), transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, rgba(106, 69, 40, 0.08), transparent 55%);
+    radial-gradient(900px 500px at 105% -8%, rgba(255, 206, 31, 0.18), transparent 60%),
+    radial-gradient(820px 480px at -8% 0%, rgba(58, 160, 227, 0.16), transparent 55%),
+    radial-gradient(760px 520px at 50% 115%, rgba(232, 54, 44, 0.10), transparent 55%);
   background-attachment: fixed;
 }
 
-/* Shared component classes. Each is self-contained because Tailwind v4 only
-   lets @apply reference real utilities. */
+/* Shared component classes (self-contained for Tailwind v4 @apply). */
 @layer components {
   .btn,
   .btn-primary,
   .btn-secondary,
   .btn-danger {
-    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition-all duration-150 outline-none disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-bold transition-all duration-150 outline-none disabled:pointer-events-none disabled:opacity-50;
   }
   .btn:focus-visible,
   .btn-primary:focus-visible,
@@ -67,14 +78,15 @@ body {
     box-shadow: 0 0 0 3px var(--ring);
   }
 
+  /* Primary = bright Pengo gold with navy text — colorful and high-contrast. */
   .btn-primary {
-    color: #fff;
-    background-image: linear-gradient(135deg, var(--brand-2), var(--brand));
-    box-shadow: 0 6px 16px -8px rgba(106, 69, 40, 0.7);
+    color: var(--navy);
+    background-image: linear-gradient(135deg, var(--gold-2), var(--gold));
+    box-shadow: 0 8px 18px -8px rgba(238, 176, 0, 0.85);
   }
   .btn-primary:hover {
-    background-image: linear-gradient(135deg, var(--brand), var(--brand-dark));
-    box-shadow: 0 10px 22px -8px rgba(106, 69, 40, 0.75);
+    background-image: linear-gradient(135deg, var(--gold), var(--gold-dark));
+    box-shadow: 0 12px 24px -8px rgba(238, 176, 0, 0.9);
     transform: translateY(-1px);
   }
   .btn-primary:active {
@@ -82,22 +94,24 @@ body {
   }
 
   .btn-secondary {
-    @apply border border-border text-foreground;
-    background: color-mix(in srgb, var(--card) 88%, transparent);
+    @apply border text-foreground;
+    border-color: var(--border);
+    background: var(--card);
     box-shadow: var(--shadow-sm);
   }
   .btn-secondary:hover {
-    border-color: color-mix(in srgb, var(--brand-2) 45%, var(--border));
-    background: var(--card);
+    border-color: var(--sky);
     transform: translateY(-1px);
   }
 
   .btn-danger {
-    @apply border border-red-200 bg-white text-red-600;
+    @apply border text-white;
+    border-color: transparent;
+    background-image: linear-gradient(135deg, #f25a51, var(--red));
   }
   .btn-danger:hover {
-    @apply bg-red-50;
-    border-color: rgb(252 165 165);
+    transform: translateY(-1px);
+    box-shadow: 0 10px 20px -8px rgba(232, 54, 44, 0.7);
   }
 
   .card {
@@ -115,17 +129,17 @@ body {
     color: color-mix(in srgb, var(--muted) 75%, transparent);
   }
   .input:focus {
-    border-color: var(--brand-2);
+    border-color: var(--sky);
     box-shadow: 0 0 0 3px var(--ring);
   }
 
   .label {
-    @apply mb-1.5 block text-sm font-medium;
-    color: color-mix(in srgb, var(--foreground) 80%, var(--muted));
+    @apply mb-1.5 block text-sm font-semibold;
+    color: color-mix(in srgb, var(--foreground) 85%, var(--muted));
   }
 
   .badge {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold;
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold;
   }
 }
 

@@ -38,12 +38,31 @@ export default async function DashboardPage() {
         subtitle="Here's what needs attention today"
       />
 
+      {lowStock.length > 0 && (
+        <Link
+          href="/stock?view=reorder"
+          className="mb-6 flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 transition-colors hover:bg-red-100"
+        >
+          <span className="text-2xl">🔔</span>
+          <div className="flex-1">
+            <div className="font-bold text-red-700">
+              {lowStock.length} item{lowStock.length === 1 ? "" : "s"} low on stock
+            </div>
+            <div className="text-sm text-red-600">
+              Tap to open the reorder report and restock.
+            </div>
+          </div>
+          <span className="text-red-400">→</span>
+        </Link>
+      )}
+
       <div className="mb-8 grid gap-4 sm:grid-cols-3">
         <StatCard
           label="Low-stock items"
           value={lowStock.length}
           href="/inventory"
           icon="⚠️"
+          accent={lowStock.length > 0 ? "red" : "green"}
           tone={lowStock.length > 0 ? "warn" : "default"}
         />
         <StatCard
@@ -51,13 +70,14 @@ export default async function DashboardPage() {
           value={remainingTasks.length}
           href="/workflow"
           icon="📋"
-          tone={remainingTasks.length > 0 ? "warn" : "default"}
+          accent={remainingTasks.length > 0 ? "gold" : "green"}
         />
         <StatCard
           label="Items tracked"
           value={items.length}
           href="/inventory"
           icon="📦"
+          accent="sky"
         />
       </div>
 

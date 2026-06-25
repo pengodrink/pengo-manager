@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem, ItemStock, Location } from "@/lib/types";
 import { saveCounts, setGlobalMinimum } from "./actions";
+import { ReorderRow } from "./reorder-row";
 
 type Search = { loc?: string; view?: string; saved?: string };
 
@@ -35,6 +36,16 @@ function groupBySupplier(items: InventoryItem[]) {
   const groups = new Map<string, InventoryItem[]>();
   for (const it of items) {
     const key = it.supplier ?? "Other";
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key)!.push(it);
+  }
+  return [...groups.entries()];
+}
+
+function groupByCategory(items: InventoryItem[]) {
+  const groups = new Map<string, InventoryItem[]>();
+  for (const it of items) {
+    const key = it.category ?? "Other";
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(it);
   }
@@ -181,40 +192,25 @@ export default async function StockPage({
                       <tr>
                         <th className="px-4 py-3 font-medium">Item</th>
                         {locations.map((l) => (
-                          <th key={l.id} className="px-3 py-3 text-right font-medium">
+                          <th key={l.id} className="px-3 py-3 text-right font-medium" title={l.name}>
                             {l.code}
                           </th>
                         ))}
                         <th className="px-4 py-3 text-right font-medium">Total</th>
+                        <th className="no-print px-3 py-3 text-right font-medium">
+                          Restock
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {list.map((it) => {
-                        const m = byItem.get(it.id);
-                        return (
-                          <tr key={it.id} className="border-t border-border">
-                            <td className="px-4 py-2.5">
-                              <span className="font-medium">{it.name}</span>
-                              {it.category && (
-                                <span className="ml-2 text-xs text-muted">
-                                  {it.category}
-                                </span>
-                              )}
-                            </td>
-                            {locations.map((l) => (
-                              <td
-                                key={l.id}
-                                className="px-3 py-2.5 text-right tabular-nums text-muted"
-                              >
-                                {m?.get(l.id) ?? 0}
-                              </td>
-                            ))}
-                            <td className="px-4 py-2.5 text-right font-semibold tabular-nums text-amber-600">
-                              {it.current_qty} {it.unit}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                      {list.map((it) => (
+                        <ReorderRow
+                          key={it.id}
+                          item={it}
+                          locations={locations}
+                          current={Object.fromEntries(byItem.get(it.id) ?? [])}
+                        />
+                      ))}
                     </tbody>
                   </table>
                 </div>
@@ -342,33 +338,37 @@ async function StockForm({
         </p>
       )}
 
-      <div className="space-y-6">
+      <div className="space-y-8">
         {groupBySupplier(items).map(([supplier, list]) => (
           <section key={supplier}>
-            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-muted">
+            <h2 className="mb-3 border-b border-border pb-1 text-base font-bold">
               {supplier}
             </h2>
-            <div className="card divide-y divide-border">
-              {list.map((it) => (
-                <div
-                  key={it.id}
-                  className="flex items-center gap-3 px-4 py-2.5"
-                >
-                  <div className="flex-1">
-                    <span className="font-medium">{it.name}</span>
-                    {it.category && (
-                      <span className="ml-2 text-xs text-muted">{it.category}</span>
-                    )}
+            <div className="space-y-4">
+              {groupByCategory(list).map(([category, citems]) => (
+                <div key={category}>
+                  <h3 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-muted">
+                    {category}
+                  </h3>
+                  <div className="card divide-y divide-border">
+                    {citems.map((it) => (
+                      <div
+                        key={it.id}
+                        className="flex items-center gap-3 px-4 py-2.5"
+                      >
+                        <div className="flex-1 font-medium">{it.name}</div>
+                        <span className="text-xs text-muted">{it.unit}</span>
+                        <input
+                          name={`qty_${it.id}`}
+                          type="number"
+                          step="any"
+                          min="0"
+                          defaultValue={current.get(it.id) ?? 0}
+                          className="input w-24 text-right"
+                        />
+                      </div>
+                    ))}
                   </div>
-                  <span className="text-xs text-muted">{it.unit}</span>
-                  <input
-                    name={`qty_${it.id}`}
-                    type="number"
-                    step="any"
-                    min="0"
-                    defaultValue={current.get(it.id) ?? 0}
-                    className="input w-24 text-right"
-                  />
                 </div>
               ))}
             </div>

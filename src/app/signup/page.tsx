@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useActionState } from "react";
 import { signUp, type AuthState } from "@/app/auth/actions";
 
@@ -13,18 +14,18 @@ export default function SignupPage() {
   return (
     <div className="flex min-h-screen items-center justify-center p-6">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div
-            className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl text-3xl"
-            style={{
-              backgroundImage:
-                "linear-gradient(135deg, var(--brand-2), var(--brand-dark))",
-              boxShadow: "var(--shadow-lg)",
-            }}
-          >
-            ☕
-          </div>
-          <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
+        <div className="mb-7 text-center">
+          <Image
+            src="/pengo-logo.png"
+            alt="Pengo"
+            width={110}
+            height={110}
+            className="mx-auto drop-shadow-lg"
+            priority
+          />
+          <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-navy">
+            Create your account
+          </h1>
           <p className="mt-1 text-sm text-muted">
             The first person to sign up becomes the manager.
           </p>
@@ -94,7 +95,7 @@ export default function SignupPage() {
 
         <p className="mt-6 text-center text-sm text-muted">
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-brand">
+          <Link href="/login" className="font-bold text-sky">
             Sign in
           </Link>
         </p>
