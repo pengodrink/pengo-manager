@@ -1,8 +1,11 @@
+import Link from "next/link";
 import { PageHeader, EmptyState } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem, ItemStock, Location } from "@/lib/types";
+import { ConfirmButton } from "@/components/confirm-button";
 import { InventoryTable, AddItemDialog } from "./inventory-table";
+import { restockAllToFull } from "./actions";
 
 export default async function InventoryPage() {
   const profile = await requireProfile();
@@ -46,7 +49,25 @@ export default async function InventoryPage() {
             ? `${list.length} items · ${lowCount} low across ${locations.length} locations`
             : "Track stock levels across your locations"
         }
-        action={isManager ? <AddItemDialog /> : null}
+        action={
+          <div className="flex flex-wrap gap-2">
+            <Link href="/shop" className="btn-secondary">
+              🛒 Shopping list
+            </Link>
+            {isManager && (
+              <>
+                <ConfirmButton
+                  action={restockAllToFull}
+                  confirm="Set EVERY item at EVERY location to its full level? This overwrites all current counts."
+                  className="btn-secondary"
+                >
+                  ↺ Mark all back in stock
+                </ConfirmButton>
+                <AddItemDialog />
+              </>
+            )}
+          </div>
+        }
       />
       {list.length === 0 ? (
         <EmptyState

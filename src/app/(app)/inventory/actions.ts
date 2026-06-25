@@ -61,6 +61,38 @@ export async function updateItem(formData: FormData) {
   revalidatePath(`/inventory/${id}`);
 }
 
+/**
+ * Manager: set EVERY item at EVERY location to that item's full level —
+ * a one-click "everything is restocked".
+ */
+export async function restockAllToFull() {
+  await requireManager();
+  const supabase = await createClient();
+
+  const [{ data: items }, { data: locs }] = await Promise.all([
+    supabase.from("inventory_items").select("id, full_level"),
+    supabase.from("locations").select("id"),
+  ]);
+
+  const rows: { item_id: string; location_id: string; qty: number }[] = [];
+  for (const it of (items ?? []) as { id: string; full_level: number }[]) {
+    for (const l of (locs ?? []) as { id: string }[]) {
+      rows.push({ item_id: it.id, location_id: l.id, qty: it.full_level });
+    }
+  }
+
+  if (rows.length) {
+    const { error } = await supabase
+      .from("item_stock")
+      .upsert(rows, { onConflict: "item_id,location_id" });
+    if (error) throw new Error(error.message);
+  }
+
+  revalidatePath("/inventory");
+  revalidatePath("/stock");
+  revalidatePath("/dashboard");
+}
+
 export async function deleteItem(formData: FormData) {
   await requireManager();
   const supabase = await createClient();
