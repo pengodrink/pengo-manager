@@ -1,18 +1,20 @@
 import { PageHeader } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { requireManager } from "@/lib/auth";
-import type { Profile } from "@/lib/types";
+import type { Profile, Location } from "@/lib/types";
 import { RoleSelect } from "./role-select";
+import { LocationPin } from "./location-pin";
 
 export default async function TeamPage() {
   const me = await requireManager();
   const supabase = await createClient();
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("*")
-    .order("created_at");
+  const [{ data }, { data: locData }] = await Promise.all([
+    supabase.from("profiles").select("*").order("created_at"),
+    supabase.from("locations").select("*").order("sort_order"),
+  ]);
   const people = (data ?? []) as Profile[];
+  const locations = (locData ?? []) as Location[];
 
   return (
     <div>
@@ -60,6 +62,21 @@ export default async function TeamPage() {
           </tbody>
         </table>
       </div>
+
+      {locations.length > 0 && (
+        <div className="mt-8">
+          <h2 className="mb-1 text-lg font-semibold">Location PINs</h2>
+          <p className="mb-3 text-sm text-muted">
+            Staff must enter a location&apos;s PIN to count its stock. Share each
+            PIN only with that location&apos;s team. (Managers don&apos;t need a PIN.)
+          </p>
+          <div className="card divide-y divide-border">
+            {locations.map((l) => (
+              <LocationPin key={l.id} id={l.id} name={l.name} pin={l.pin} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

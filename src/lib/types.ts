@@ -57,6 +57,7 @@ export type Location = {
   code: string;
   name: string;
   sort_order: number;
+  pin: string | null;
   created_at: string;
 };
 

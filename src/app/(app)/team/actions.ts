@@ -25,3 +25,19 @@ export async function updateRole(formData: FormData) {
 
   revalidatePath("/team");
 }
+
+export async function setLocationPin(formData: FormData) {
+  await requireManager();
+  const supabase = await createClient();
+
+  const id = String(formData.get("id"));
+  const pin = String(formData.get("pin") ?? "").trim();
+
+  const { error } = await supabase
+    .from("locations")
+    .update({ pin: pin === "" ? null : pin })
+    .eq("id", id);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/team");
+}

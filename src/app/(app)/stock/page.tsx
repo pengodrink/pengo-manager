@@ -6,10 +6,11 @@ import { CopyButton } from "@/components/copy-button";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem, ItemStock, Location } from "@/lib/types";
-import { saveCounts, setGlobalMinimum } from "./actions";
+import { hasLocationAccess } from "@/lib/location-access";
+import { saveCounts, setGlobalMinimum, unlockLocation } from "./actions";
 import { ReorderRow } from "./reorder-row";
 
-type Search = { loc?: string; view?: string; saved?: string };
+type Search = { loc?: string; view?: string; saved?: string; pin?: string };
 
 const STALE_DAYS = 7;
 
@@ -57,7 +58,7 @@ export default async function StockPage({
 }: {
   searchParams: Promise<Search>;
 }) {
-  const { loc, view = "count", saved } = await searchParams;
+  const { loc, view = "count", saved, pin } = await searchParams;
   const profile = await requireProfile();
   const isManager = profile.role === "manager";
   const supabase = await createClient();
@@ -307,6 +308,35 @@ export default async function StockPage({
           title="Choose a location above"
           hint="Then you'll see every item with a box to type your current count."
         />
+      ) : !isManager && !(await hasLocationAccess(selected.id)) ? (
+        <div className="mx-auto max-w-sm">
+          <div className="card p-6 text-center">
+            <div className="mb-2 text-3xl">🔒</div>
+            <h2 className="text-lg font-bold">{selected.name}</h2>
+            <p className="mb-4 text-sm text-muted">
+              Enter this location&apos;s PIN to count its stock.
+            </p>
+            <form action={unlockLocation} className="space-y-3">
+              <input type="hidden" name="location_id" value={selected.id} />
+              <input
+                name="pin"
+                inputMode="numeric"
+                autoComplete="off"
+                autoFocus
+                placeholder="••••"
+                className="input text-center text-2xl tracking-[0.5em]"
+              />
+              {pin === "bad" && (
+                <p className="text-sm font-medium text-red">
+                  Wrong PIN — try again.
+                </p>
+              )}
+              <button type="submit" className="btn-primary w-full">
+                Unlock
+              </button>
+            </form>
+          </div>
+        </div>
       ) : items.length === 0 ? (
         <EmptyState icon="📦" title="No items yet" hint="Import items first." />
       ) : (
