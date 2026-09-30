@@ -24,7 +24,7 @@ export default function LoginPage() {
             priority
           />
           <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-navy">
-            Shop Manager
+            Manager sign in
           </h1>
           <p className="mt-1 text-sm text-muted">Sign in to continue</p>
         </div>
@@ -77,9 +77,9 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-sm text-muted">
-          No account?{" "}
-          <Link href="/signup" className="font-bold text-sky">
-            Create one
+          Staff?{" "}
+          <Link href="/enter" className="font-bold text-sky">
+            Enter your location code
           </Link>
         </p>
       </div>

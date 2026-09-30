@@ -61,6 +61,7 @@ export default async function StockPage({
   const { loc, view = "count", saved, pin } = await searchParams;
   const profile = await requireProfile();
   const isManager = profile.role === "manager";
+  const ownCode = profile.location_code; // set for staff signed in with a location code
   const supabase = await createClient();
 
   const { data: locationData } = await supabase
@@ -213,6 +214,7 @@ export default async function StockPage({
                     <tbody>
                       {list.map((it) => (
                         <ReorderRow
+                          editableCodes={isManager ? null : ownCode ? [ownCode] : null}
                           key={it.id}
                           item={it}
                           locations={locations}
@@ -232,7 +234,12 @@ export default async function StockPage({
   }
 
   // ------------------------------------------------------------------ COUNT
-  const selected = locations.find((l) => l.id === loc) ?? null;
+  const visibleLocations = ownCode
+    ? locations.filter((l) => l.code === ownCode)
+    : locations;
+  const selected = ownCode
+    ? (visibleLocations[0] ?? null)
+    : (locations.find((l) => l.id === loc) ?? null);
 
   // Most recent count time per location.
   const { data: tsData } = await supabase
@@ -263,7 +270,7 @@ export default async function StockPage({
 
       {/* Location picker */}
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {locations.map((l) => {
+        {visibleLocations.map((l) => {
           const active = selected?.id === l.id;
           const ts = lastCounted.get(l.id);
           const stale = isStale(ts);
@@ -308,7 +315,7 @@ export default async function StockPage({
           title="Choose a location above"
           hint="Then you'll see every item with a box to type your current count."
         />
-      ) : !isManager && !(await hasLocationAccess(selected.id)) ? (
+      ) : !isManager && !ownCode && !(await hasLocationAccess(selected.id)) ? (
         <div className="mx-auto max-w-sm">
           <div className="card p-6 text-center">
             <div className="mb-2 text-3xl">🔒</div>

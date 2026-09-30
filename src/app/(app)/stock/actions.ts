@@ -7,6 +7,33 @@ import { createClient } from "@/lib/supabase/server";
 import { requireManager, requireProfile } from "@/lib/auth";
 import { hasLocationAccess, locCookie } from "@/lib/location-access";
 
+type Sess = Awaited<ReturnType<typeof requireProfile>>;
+type Sb = Awaited<ReturnType<typeof createClient>>;
+
+/**
+ * Who may change counts at a location?
+ *  - managers: any location
+ *  - staff signed in with a location code: only their own location
+ *  - other employee accounts: any location they've unlocked with its PIN
+ */
+async function assertCanEdit(profile: Sess, supabase: Sb, locationId: string) {
+  if (profile.role === "manager") return;
+  if (profile.location_code) {
+    const { data } = await supabase
+      .from("locations")
+      .select("code")
+      .eq("id", locationId)
+      .single();
+    if (data?.code !== profile.location_code) {
+      throw new Error("You can only update your own location.");
+    }
+    return;
+  }
+  if (!(await hasLocationAccess(locationId))) {
+    throw new Error("Enter the location PIN before saving counts.");
+  }
+}
+
 /** Verify the location PIN and, if correct, unlock it for this session. */
 export async function unlockLocation(formData: FormData) {
   await requireProfile();
@@ -45,10 +72,7 @@ export async function saveCounts(formData: FormData) {
   const locationId = String(formData.get("location_id"));
   if (!locationId) throw new Error("No location selected.");
 
-  // Managers bypass; everyone else needs the location PIN unlocked.
-  if (profile.role !== "manager" && !(await hasLocationAccess(locationId))) {
-    throw new Error("Enter the location PIN before saving counts.");
-  }
+  await assertCanEdit(profile, supabase, locationId);
 
   const rows: { item_id: string; location_id: string; qty: number }[] = [];
   for (const [key, value] of formData.entries()) {
@@ -80,7 +104,7 @@ export async function saveCounts(formData: FormData) {
  * `qty_<locationId>` field per location. Used by the editable reorder report.
  */
 export async function saveItemCounts(formData: FormData) {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
 
   const itemId = String(formData.get("item_id"));
@@ -97,10 +121,21 @@ export async function saveItemCounts(formData: FormData) {
     });
   }
 
-  if (rows.length) {
+  // Only write the locations this session is allowed to edit.
+  const allowed: typeof rows = [];
+  for (const r of rows) {
+    try {
+      await assertCanEdit(profile, supabase, r.location_id);
+      allowed.push(r);
+    } catch {
+      /* skip locations this session can't edit */
+    }
+  }
+
+  if (allowed.length) {
     const { error } = await supabase
       .from("item_stock")
-      .upsert(rows, { onConflict: "item_id,location_id" });
+      .upsert(allowed, { onConflict: "item_id,location_id" });
     if (error) throw new Error(error.message);
   }
 
@@ -111,11 +146,12 @@ export async function saveItemCounts(formData: FormData) {
 
 /** Set one item's stock at one location (used by the item page restock popup). */
 export async function setLocationStock(formData: FormData) {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
 
   const itemId = String(formData.get("item_id"));
   const locationId = String(formData.get("location_id"));
+  await assertCanEdit(profile, supabase, locationId);
   const n = Number(formData.get("qty"));
   const qty = Number.isFinite(n) ? Math.max(0, n) : 0;
 

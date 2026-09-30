@@ -17,7 +17,7 @@ export default async function ItemDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
 
   const { data: item } = await supabase
@@ -135,6 +135,11 @@ export default async function ItemDetailPage({
                 qty={s?.qty ?? 0}
                 updatedAt={s?.updated_at ?? null}
                 fullLevel={i.full_level}
+                readOnly={
+                  profile.role !== "manager" &&
+                  !!profile.location_code &&
+                  l.code !== profile.location_code
+                }
               />
             );
           })}

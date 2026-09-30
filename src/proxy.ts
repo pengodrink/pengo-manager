@@ -34,12 +34,13 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const isAuthRoute = path === "/login" || path === "/signup";
+  const isAuthRoute =
+    path === "/login" || path === "/signup" || path === "/enter";
 
   // Not signed in and trying to reach a protected page -> go to login.
   if (!user && !isAuthRoute) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/enter";
     return NextResponse.redirect(url);
   }
 
@@ -48,6 +49,21 @@ export async function proxy(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     return NextResponse.redirect(url);
+  }
+
+  // Staff (location-code) sessions last 30 minutes from their last activity:
+  // re-stamp the auth cookies on every request.
+  if (user?.user_metadata?.location_code) {
+    for (const c of request.cookies.getAll()) {
+      if (c.name.startsWith("sb-")) {
+        response.cookies.set(c.name, c.value, {
+          path: "/",
+          sameSite: "lax",
+          httpOnly: true,
+          maxAge: 30 * 60,
+        });
+      }
+    }
   }
 
   return response;

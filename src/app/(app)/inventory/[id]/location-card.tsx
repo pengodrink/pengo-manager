@@ -11,6 +11,7 @@ export function LocationCard({
   qty,
   updatedAt,
   fullLevel,
+  readOnly = false,
 }: {
   itemId: string;
   unit: string;
@@ -19,6 +20,7 @@ export function LocationCard({
   qty: number;
   updatedAt: string | null;
   fullLevel: number;
+  readOnly?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [entry, setEntry] = useState(String(qty));
@@ -58,6 +60,18 @@ export function LocationCard({
       setEntry(String(qty));
       setOpen(true);
     }
+  }
+
+  if (readOnly) {
+    return (
+      <div className="card w-full p-5 text-left opacity-90">
+        <div className="text-sm text-muted">{locationName}</div>
+        <div className="mt-1 text-2xl font-bold tabular-nums">
+          {qty} <span className="text-base font-normal text-muted">{unit}</span>
+        </div>
+        <div className="mt-1 text-xs text-muted">View only</div>
+      </div>
+    );
   }
 
   return (

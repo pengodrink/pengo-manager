@@ -8,10 +8,13 @@ export function ReorderRow({
   item,
   locations,
   current,
+  editableCodes = null,
 }: {
   item: InventoryItem;
   locations: Location[];
   current: Record<string, number>;
+  /** Location codes this user may edit; null = all. */
+  editableCodes?: string[] | null;
 }) {
   const [vals, setVals] = useState<Record<string, string>>(() =>
     Object.fromEntries(
@@ -57,7 +60,8 @@ export function ReorderRow({
             onChange={(e) =>
               setVals((v) => ({ ...v, [l.id]: e.target.value }))
             }
-            className="input w-16 px-2 py-1 text-right tabular-nums"
+            disabled={editableCodes !== null && !editableCodes.includes(l.code)}
+            className="input w-16 px-2 py-1 text-right tabular-nums disabled:bg-background disabled:text-muted"
             aria-label={`${item.name} at ${l.name}`}
           />
         </td>
