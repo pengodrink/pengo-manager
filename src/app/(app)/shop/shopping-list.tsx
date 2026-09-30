@@ -76,6 +76,24 @@ export function ShoppingList({ items }: { items: ShopItem[] }) {
 
   return (
     <div className="space-y-4">
+      {/* At-a-glance summary across all vendors */}
+      <div className="no-print grid grid-cols-3 gap-3">
+        <div className="card p-4 text-center">
+          <div className="text-2xl font-extrabold text-navy">{items.length}</div>
+          <div className="text-xs text-muted">items to buy</div>
+        </div>
+        <div className="card p-4 text-center">
+          <div className="text-2xl font-extrabold text-red">
+            {items.filter((i) => i.current_qty <= 0).length}
+          </div>
+          <div className="text-xs text-muted">out of stock</div>
+        </div>
+        <div className="card p-4 text-center">
+          <div className="text-2xl font-extrabold text-navy">{vendors.length}</div>
+          <div className="text-xs text-muted">vendors to visit</div>
+        </div>
+      </div>
+
       {/* Vendor picker */}
       <div className="no-print flex flex-wrap gap-2">
         {vendors.map((v) => {

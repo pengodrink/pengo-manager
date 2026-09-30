@@ -103,6 +103,8 @@ export function AddItemDialog() {
   );
 }
 
+type Filter = "all" | "out" | "low" | "ok";
+
 export function InventoryTable({
   items,
   locations,
@@ -115,30 +117,142 @@ export function InventoryTable({
   isManager: boolean;
 }) {
   const [q, setQ] = useState("");
+  const [filter, setFilter] = useState<Filter>("all");
+
+  const statusOf = (i: InventoryItem) =>
+    stockStatus(i.current_qty, i.low_stock_threshold);
+
+  const counts = useMemo(() => {
+    const c = { all: items.length, out: 0, low: 0, ok: 0 };
+    for (const i of items) c[statusOf(i)]++;
+    return c;
+  }, [items]);
 
   const filtered = useMemo(() => {
     const term = q.trim().toLowerCase();
-    if (!term) return items;
-    return items.filter(
-      (i) =>
+    return items.filter((i) => {
+      if (filter !== "all" && statusOf(i) !== filter) return false;
+      if (!term) return true;
+      return (
         i.name.toLowerCase().includes(term) ||
         (i.category ?? "").toLowerCase().includes(term) ||
-        (i.supplier ?? "").toLowerCase().includes(term),
-    );
-  }, [items, q]);
+        (i.supplier ?? "").toLowerCase().includes(term)
+      );
+    });
+  }, [items, q, filter]);
+
+  const chips: { key: Filter; label: string; cls: string }[] = [
+    { key: "all", label: "All", cls: "bg-navy text-white" },
+    { key: "out", label: "⛔ Out", cls: "bg-red text-white" },
+    { key: "low", label: "⚠️ Low", cls: "bg-gold text-navy" },
+    { key: "ok", label: "✓ OK", cls: "bg-green text-white" },
+  ];
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by item, category or supplier…"
-          className="input max-w-sm"
-        />
+      <input
+        value={q}
+        onChange={(e) => setQ(e.target.value)}
+        placeholder="🔍 Search item, category or vendor…"
+        className="input"
+      />
+
+      {/* Status filter chips */}
+      <div className="flex flex-wrap gap-2">
+        {chips.map((c) => {
+          const active = filter === c.key;
+          return (
+            <button
+              key={c.key}
+              type="button"
+              onClick={() => setFilter(c.key)}
+              className={`rounded-full px-4 py-2 text-sm font-bold transition-all ${
+                active ? `${c.cls} shadow` : "border border-border bg-card text-foreground"
+              }`}
+            >
+              {c.label}{" "}
+              <span className={active ? "opacity-80" : "text-muted"}>
+                {counts[c.key]}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      <div className="card overflow-x-auto">
+      {filtered.length === 0 && (
+        <div className="card p-10 text-center text-sm text-muted">
+          No items match.
+        </div>
+      )}
+
+      {/* Phone: big, easy-to-read cards */}
+      <div className="space-y-2 md:hidden">
+        {filtered.map((item) => {
+          const status = statusOf(item);
+          const perLoc = stock[item.id] ?? {};
+          return (
+            <div key={item.id}>
+            <Link
+              href={`/inventory/${item.id}`}
+              className="card block p-4 active:bg-background"
+              style={{
+                borderLeft: `6px solid ${
+                  status === "out"
+                    ? "var(--red)"
+                    : status === "low"
+                      ? "var(--gold)"
+                      : "var(--green)"
+                }`,
+              }}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-base font-bold">{item.name}</div>
+                  <div className="text-xs text-muted">
+                    {[item.supplier, item.category].filter(Boolean).join(" · ")}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div
+                    className={`text-2xl font-extrabold tabular-nums ${
+                      status === "out" ? "text-red" : "text-navy"
+                    }`}
+                  >
+                    {item.current_qty}
+                  </div>
+                  <span className={`badge ${STATUS_BADGE[status]}`}>
+                    {STATUS_LABEL[status]}
+                  </span>
+                </div>
+              </div>
+              <div className="mt-2 flex gap-3 text-xs text-muted">
+                {locations.map((l) => (
+                  <span key={l.id}>
+                    <b className="text-foreground">{l.code}</b> {perLoc[l.id] ?? 0}
+                  </span>
+                ))}
+              </div>
+            </Link>
+            {isManager && (
+              <div className="mt-1 flex justify-end">
+                <FormDialog
+                  trigger="✎ Edit"
+                  title={`Edit ${item.name}`}
+                  action={updateItem}
+                  triggerClassName="text-xs font-semibold text-muted px-2 py-1"
+                >
+                  <input type="hidden" name="id" value={item.id} />
+                  <ItemFields item={item} />
+                </FormDialog>
+              </div>
+            )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Desktop: full table */}
+      <div className="card hidden overflow-x-auto md:block">
         <table className="w-full text-sm">
           <thead className="bg-background text-left text-muted">
             <tr>
@@ -156,10 +270,7 @@ export function InventoryTable({
           </thead>
           <tbody>
             {filtered.map((item) => {
-              const status = stockStatus(
-                item.current_qty,
-                item.low_stock_threshold,
-              );
+              const status = statusOf(item);
               const perLoc = stock[item.id] ?? {};
               return (
                 <tr key={item.id} className="border-t border-border">

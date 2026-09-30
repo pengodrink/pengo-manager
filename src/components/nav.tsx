@@ -11,6 +11,7 @@ const links: { href: string; label: string; icon: string; managerOnly?: boolean 
   [
     { href: "/dashboard", label: "Dashboard", icon: "🏠" },
     { href: "/inventory", label: "Inventory", icon: "📦" },
+    { href: "/shop", label: "To Buy", icon: "🛒" },
     { href: "/stock", label: "Stock Count", icon: "🧮" },
     { href: "/recipes", label: "Recipes", icon: "📖" },
     { href: "/workflow", label: "Workflow", icon: "✅" },
@@ -74,7 +75,7 @@ export function Nav({
 
         <div className="ml-auto flex items-center gap-3">
           <Link
-            href="/stock?view=reorder"
+            href="/shop"
             className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-lg transition-colors hover:bg-white/20"
             title={
               lowCount > 0

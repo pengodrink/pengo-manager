@@ -39,6 +39,11 @@ export default async function DashboardPage() {
       <PageHeader
         title={`Hi, ${firstName} 👋`}
         subtitle="Here's what needs attention today"
+        action={
+          <Link href="/shop" className="btn-primary">
+            🛒 What to buy
+          </Link>
+        }
       />
 
       {outOfStock.length > 0 && (
