@@ -74,10 +74,21 @@ export async function restockAllToFull() {
     supabase.from("locations").select("id"),
   ]);
 
-  const rows: { item_id: string; location_id: string; qty: number }[] = [];
+  const now = new Date().toISOString();
+  const rows: {
+    item_id: string;
+    location_id: string;
+    qty: number;
+    updated_at: string;
+  }[] = [];
   for (const it of (items ?? []) as { id: string; full_level: number }[]) {
     for (const l of (locs ?? []) as { id: string }[]) {
-      rows.push({ item_id: it.id, location_id: l.id, qty: it.full_level });
+      rows.push({
+        item_id: it.id,
+        location_id: l.id,
+        qty: it.full_level,
+        updated_at: now,
+      });
     }
   }
 
@@ -101,5 +112,64 @@ export async function deleteItem(formData: FormData) {
   const { error } = await supabase.from("inventory_items").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/inventory");
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Manager: add many items at once. One per line, as "Name" or
+ * "Name | Category". Vendor/category fields apply as defaults. Items that
+ * already exist (same name + vendor) are skipped.
+ */
+export async function importItems(formData: FormData) {
+  await requireManager();
+  const supabase = await createClient();
+
+  const defSupplier = str(formData.get("supplier"));
+  const defCategory = str(formData.get("category"));
+  const lines = String(formData.get("list") ?? "").split("\n");
+
+  const { data: existing } = await supabase
+    .from("inventory_items")
+    .select("name, supplier");
+  const seen = new Set(
+    ((existing ?? []) as { name: string; supplier: string | null }[]).map(
+      (e) => `${e.name.trim().toLowerCase()}|${(e.supplier ?? "").toLowerCase()}`,
+    ),
+  );
+
+  const rows: {
+    name: string;
+    category: string | null;
+    supplier: string | null;
+    unit: string;
+    low_stock_threshold: number;
+    full_level: number;
+  }[] = [];
+
+  for (const raw of lines) {
+    const [nameRaw, catRaw] = raw.split("|");
+    const name = (nameRaw ?? "").trim();
+    if (!name) continue;
+    const key = `${name.toLowerCase()}|${(defSupplier ?? "").toLowerCase()}`;
+    if (seen.has(key)) continue; // duplicate of an existing item or earlier line
+    seen.add(key);
+    rows.push({
+      name,
+      category: (catRaw ?? "").trim() || defCategory,
+      supplier: defSupplier,
+      unit: "Unit",
+      low_stock_threshold: 3,
+      full_level: 6,
+    });
+  }
+
+  if (!rows.length) throw new Error("Nothing new to add (all items already exist).");
+
+  const { error } = await supabase.from("inventory_items").insert(rows);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/inventory");
+  revalidatePath("/stock");
+  revalidatePath("/shop");
   revalidatePath("/dashboard");
 }

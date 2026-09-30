@@ -5,6 +5,7 @@ import { requireProfile } from "@/lib/auth";
 import type { InventoryItem, ItemStock, Location } from "@/lib/types";
 import { ConfirmButton } from "@/components/confirm-button";
 import { InventoryTable, AddItemDialog } from "./inventory-table";
+import { ImportItemsDialog } from "./import-items";
 import { restockAllToFull } from "./actions";
 
 export default async function InventoryPage() {
@@ -63,6 +64,7 @@ export default async function InventoryPage() {
                 >
                   ↺ Mark all back in stock
                 </ConfirmButton>
+                <ImportItemsDialog />
                 <AddItemDialog />
               </>
             )}

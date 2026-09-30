@@ -74,7 +74,12 @@ export async function saveCounts(formData: FormData) {
 
   await assertCanEdit(profile, supabase, locationId);
 
-  const rows: { item_id: string; location_id: string; qty: number }[] = [];
+  const rows: {
+    item_id: string;
+    location_id: string;
+    qty: number;
+    updated_at: string;
+  }[] = [];
   for (const [key, value] of formData.entries()) {
     if (!key.startsWith("qty_")) continue;
     const itemId = key.slice(4);
@@ -83,6 +88,7 @@ export async function saveCounts(formData: FormData) {
       item_id: itemId,
       location_id: locationId,
       qty: Number.isFinite(n) ? n : 0,
+      updated_at: new Date().toISOString(),
     });
   }
 
@@ -110,7 +116,12 @@ export async function saveItemCounts(formData: FormData) {
   const itemId = String(formData.get("item_id"));
   if (!itemId) throw new Error("No item.");
 
-  const rows: { item_id: string; location_id: string; qty: number }[] = [];
+  const rows: {
+    item_id: string;
+    location_id: string;
+    qty: number;
+    updated_at: string;
+  }[] = [];
   for (const [key, value] of formData.entries()) {
     if (!key.startsWith("qty_")) continue;
     const n = Number(value);
@@ -118,6 +129,7 @@ export async function saveItemCounts(formData: FormData) {
       item_id: itemId,
       location_id: key.slice(4),
       qty: Number.isFinite(n) ? n : 0,
+      updated_at: new Date().toISOString(),
     });
   }
 
@@ -157,7 +169,7 @@ export async function setLocationStock(formData: FormData) {
 
   const { error } = await supabase
     .from("item_stock")
-    .upsert([{ item_id: itemId, location_id: locationId, qty }], {
+    .upsert([{ item_id: itemId, location_id: locationId, qty, updated_at: new Date().toISOString() }], {
       onConflict: "item_id,location_id",
     });
   if (error) throw new Error(error.message);

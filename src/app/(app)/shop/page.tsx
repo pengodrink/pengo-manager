@@ -14,11 +14,11 @@ export default async function ShopPage() {
     .order("name");
 
   const items = ((data ?? []) as InventoryItem[])
-    .filter((i) => i.current_qty <= i.low_stock_threshold && i.supplier)
+    .filter((i) => i.current_qty <= i.low_stock_threshold)
     .map((i) => ({
       id: i.id,
       name: i.name,
-      supplier: i.supplier as string,
+      supplier: i.supplier ?? "No vendor yet",
       category: i.category,
       unit: i.unit,
       current_qty: i.current_qty,
