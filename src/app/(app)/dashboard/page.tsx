@@ -2,7 +2,14 @@ import Link from "next/link";
 import { PageHeader, StatCard } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import type { InventoryItem, TaskCompletion, WorkflowTask } from "@/lib/types";
+import type {
+  InventoryItem,
+  ItemStock,
+  Location,
+  TaskCompletion,
+  WorkflowTask,
+} from "@/lib/types";
+import { stockStatus, STATUS_BADGE, STATUS_LABEL } from "@/lib/stock";
 import { scopeFor, scopeItems } from "@/lib/scope";
 
 export default async function DashboardPage() {
@@ -10,18 +17,59 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
 
-  const [{ data: itemData }, { data: taskData }, { data: completionData }] =
-    await Promise.all([
+  const [
+    { data: itemData },
+    { data: taskData },
+    { data: completionData },
+    { data: locData },
+    { data: stockData },
+  ] = await Promise.all([
       supabase.from("inventory_items").select("*").order("name"),
       supabase.from("workflow_tasks").select("*").eq("active", true),
       supabase
         .from("task_completions")
         .select("task_id")
         .eq("business_date", today),
+      supabase.from("locations").select("*").order("sort_order"),
+      supabase.from("item_stock").select("item_id, location_id, qty"),
     ]);
 
   const scope = await scopeFor(supabase, profile);
   const items = scopeItems((itemData ?? []) as InventoryItem[], scope);
+  const locations = (locData ?? []) as Location[];
+  const stockByItem = new Map<string, Map<string, number>>();
+  for (const r of (stockData ?? []) as Pick<
+    ItemStock,
+    "item_id" | "location_id" | "qty"
+  >[]) {
+    if (!stockByItem.has(r.item_id)) stockByItem.set(r.item_id, new Map());
+    stockByItem.get(r.item_id)!.set(r.location_id, Number(r.qty));
+  }
+
+  // Under each item, show every location's own status (managers only —
+  // staff already see just their own location).
+  const chips = (i: InventoryItem) => {
+    if (scope || locations.length === 0) return null;
+    const m = stockByItem.get(i.id);
+    return (
+      <div className="mt-1.5 flex flex-wrap gap-1.5">
+        {locations.map((l) => {
+          const q = m?.get(l.id) ?? 0;
+          const st = stockStatus(q, i.low_stock_threshold);
+          return (
+            <span
+              key={l.id}
+              title={`${l.name}: ${STATUS_LABEL[st]}`}
+              className={`badge text-[11px] ${STATUS_BADGE[st]}`}
+            >
+              {l.code} · {st === "out" ? "Out" : st === "low" ? `Low ${q}` : `OK ${q}`}
+            </span>
+          );
+        })}
+      </div>
+    );
+  };
+
   const tasks = (taskData ?? []) as WorkflowTask[];
   const completions = (completionData ?? []) as Pick<TaskCompletion, "task_id">[];
 
@@ -71,12 +119,15 @@ export default async function DashboardPage() {
                 href={`/inventory/${i.id}`}
                 className="flex items-center justify-between p-4 hover:bg-background"
               >
-                <span className="font-medium">
-                  {i.name}
-                  {i.supplier && (
-                    <span className="ml-2 text-xs text-muted">{i.supplier}</span>
-                  )}
-                </span>
+                <div>
+                  <span className="font-medium">
+                    {i.name}
+                    {i.supplier && (
+                      <span className="ml-2 text-xs text-muted">{i.supplier}</span>
+                    )}
+                  </span>
+                  {chips(i)}
+                </div>
                 <span className="badge bg-red-100 text-red-700">⛔ Out of stock</span>
               </Link>
             ))}
@@ -107,12 +158,15 @@ export default async function DashboardPage() {
                 href={`/inventory/${i.id}`}
                 className="flex items-center justify-between p-4 hover:bg-background"
               >
-                <span className="font-medium">
-                  {i.name}
-                  {i.supplier && (
-                    <span className="ml-2 text-xs text-muted">{i.supplier}</span>
-                  )}
-                </span>
+                <div>
+                  <span className="font-medium">
+                    {i.name}
+                    {i.supplier && (
+                      <span className="ml-2 text-xs text-muted">{i.supplier}</span>
+                    )}
+                  </span>
+                  {chips(i)}
+                </div>
                 <span className="badge bg-amber-100 text-amber-700 tabular-nums">
                   {i.current_qty} {i.unit} left
                 </span>
@@ -176,7 +230,10 @@ export default async function DashboardPage() {
                     href={`/inventory/${i.id}`}
                     className="flex items-center justify-between p-4 hover:bg-background"
                   >
-                    <span className="font-medium">{i.name}</span>
+                    <div>
+                      <span className="font-medium">{i.name}</span>
+                      {chips(i)}
+                    </div>
                     <span
                       className={`badge tabular-nums ${
                         out
