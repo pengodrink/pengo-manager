@@ -3,6 +3,7 @@ import { PageHeader, StatCard } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem, TaskCompletion, WorkflowTask } from "@/lib/types";
+import { scopeFor, scopeItems } from "@/lib/scope";
 
 export default async function DashboardPage() {
   const profile = await requireProfile();
@@ -19,7 +20,8 @@ export default async function DashboardPage() {
         .eq("business_date", today),
     ]);
 
-  const items = (itemData ?? []) as InventoryItem[];
+  const scope = await scopeFor(supabase, profile);
+  const items = scopeItems((itemData ?? []) as InventoryItem[], scope);
   const tasks = (taskData ?? []) as WorkflowTask[];
   const completions = (completionData ?? []) as Pick<TaskCompletion, "task_id">[];
 

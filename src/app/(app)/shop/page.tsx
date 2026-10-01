@@ -3,17 +3,19 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem } from "@/lib/types";
 import { ShoppingList } from "./shopping-list";
+import { scopeFor, scopeItems } from "@/lib/scope";
 
 export default async function ShopPage() {
-  await requireProfile();
+  const profile = await requireProfile();
   const supabase = await createClient();
+  const scope = await scopeFor(supabase, profile);
 
   const { data } = await supabase
     .from("inventory_items")
     .select("id, name, supplier, category, unit, current_qty, low_stock_threshold")
     .order("name");
 
-  const items = ((data ?? []) as InventoryItem[])
+  const items = scopeItems((data ?? []) as InventoryItem[], scope)
     .filter((i) => i.current_qty <= i.low_stock_threshold)
     .map((i) => ({
       id: i.id,

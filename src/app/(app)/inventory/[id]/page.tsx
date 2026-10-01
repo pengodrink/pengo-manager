@@ -27,18 +27,28 @@ export default async function ItemDetailPage({
     .single();
 
   if (!item) notFound();
-  const i = item as InventoryItem;
+  const base = item as InventoryItem;
 
   const [{ data: locationData }, { data: stockData }] = await Promise.all([
     supabase.from("locations").select("*").order("sort_order"),
     supabase.from("item_stock").select("location_id, qty, updated_at").eq("item_id", id),
   ]);
-  const locations = (locationData ?? []) as Location[];
+  const allLocations = (locationData ?? []) as Location[];
+  const ownLoc =
+    profile.role !== "manager" && profile.location_code
+      ? allLocations.find((l) => l.code === profile.location_code) ?? null
+      : null;
+  const locations = ownLoc ? [ownLoc] : allLocations;
   const stock = new Map<string, { qty: number; updated_at: string }>();
   (stockData as Pick<ItemStock, "location_id" | "qty" | "updated_at">[] | null)?.forEach(
     (s) => stock.set(s.location_id, { qty: s.qty, updated_at: s.updated_at }),
   );
 
+  // Staff see this location's count instead of the all-locations total.
+  const i: InventoryItem = ownLoc
+    ? { ...base, current_qty: stock.get(ownLoc.id)?.qty ?? 0 }
+    : base;
+  const scoped = !!ownLoc;
   const status = stockStatus(i.current_qty, i.low_stock_threshold);
   const need = needToOrder(i.current_qty, i.low_stock_threshold);
 
@@ -62,7 +72,9 @@ export default async function ItemDetailPage({
 
         <dl className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
           <div>
-            <dt className="text-xs text-muted">Total in stock</dt>
+            <dt className="text-xs text-muted">
+              {scoped ? "In stock here" : "Total in stock"}
+            </dt>
             <dd className="text-lg font-semibold tabular-nums">
               {i.current_qty} {i.unit}
             </dd>

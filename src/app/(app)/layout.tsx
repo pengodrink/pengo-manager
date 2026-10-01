@@ -2,6 +2,7 @@ import { Nav } from "@/components/nav";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { InventoryItem } from "@/lib/types";
+import { scopeFor, scopeItems } from "@/lib/scope";
 
 export default async function AppLayout({
   children,
@@ -13,11 +14,15 @@ export default async function AppLayout({
 
   const { data: items } = await supabase
     .from("inventory_items")
-    .select("current_qty, low_stock_threshold");
-  const lowCount = ((items ?? []) as Pick<
-    InventoryItem,
-    "current_qty" | "low_stock_threshold"
-  >[]).filter((i) => i.current_qty <= i.low_stock_threshold).length;
+    .select("id, current_qty, low_stock_threshold");
+  const scope = await scopeFor(supabase, profile);
+  const lowCount = scopeItems(
+    (items ?? []) as Pick<
+      InventoryItem,
+      "id" | "current_qty" | "low_stock_threshold"
+    >[],
+    scope,
+  ).filter((i) => i.current_qty <= i.low_stock_threshold).length;
 
   return (
     <div className="min-h-screen">

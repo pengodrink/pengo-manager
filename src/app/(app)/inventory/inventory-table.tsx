@@ -118,6 +118,7 @@ export function InventoryTable({
 }) {
   const [q, setQ] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
+  const single = locations.length === 1; // staff view: just their location
 
   const statusOf = (i: InventoryItem) =>
     stockStatus(i.current_qty, i.low_stock_threshold);
@@ -225,7 +226,9 @@ export function InventoryTable({
                   </span>
                 </div>
               </div>
-              <div className="mt-2 flex gap-3 text-xs text-muted">
+              <div
+                className={`mt-2 gap-3 text-xs text-muted ${single ? "hidden" : "flex"}`}
+              >
                 {locations.map((l) => (
                   <span key={l.id}>
                     <b className="text-foreground">{l.code}</b> {perLoc[l.id] ?? 0}
@@ -263,7 +266,9 @@ export function InventoryTable({
                   {l.code}
                 </th>
               ))}
-              <th className="px-3 py-3 text-right font-medium">Total</th>
+              {!single && (
+                <th className="px-3 py-3 text-right font-medium">Total</th>
+              )}
               <th className="px-3 py-3 font-medium">Status</th>
               {isManager && <th className="px-4 py-3 text-right font-medium">Actions</th>}
             </tr>
@@ -294,13 +299,15 @@ export function InventoryTable({
                       {perLoc[l.id] ?? 0}
                     </td>
                   ))}
-                  <td
-                    className={`px-3 py-2.5 text-right font-semibold tabular-nums ${
-                      status === "out" ? "text-red" : ""
-                    }`}
-                  >
-                    {item.current_qty}
-                  </td>
+                  {!single && (
+                    <td
+                      className={`px-3 py-2.5 text-right font-semibold tabular-nums ${
+                        status === "out" ? "text-red" : ""
+                      }`}
+                    >
+                      {item.current_qty}
+                    </td>
+                  )}
                   <td className="px-3 py-2.5">
                     <span className={`badge ${STATUS_BADGE[status]}`}>
                       {status === "out" && "⛔ "}

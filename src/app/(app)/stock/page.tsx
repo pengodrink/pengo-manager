@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import type { InventoryItem, ItemStock, Location } from "@/lib/types";
 import { hasLocationAccess } from "@/lib/location-access";
+import { scopeFor, scopeItems } from "@/lib/scope";
 import { saveCounts, setGlobalMinimum, unlockLocation } from "./actions";
 import { ReorderRow } from "./reorder-row";
 
@@ -89,7 +90,12 @@ export default async function StockPage({
     .order("supplier")
     .order("category")
     .order("name");
-  const items = (itemData ?? []) as InventoryItem[];
+  const scope = await scopeFor(supabase, profile);
+  const items = scopeItems((itemData ?? []) as InventoryItem[], scope);
+  // Staff only ever see their own location's columns.
+  const shownLocations = scope
+    ? locations.filter((l) => l.id === scope.locationId)
+    : locations;
 
   const tab = (v: string, label: string) => (
     <Link
@@ -200,7 +206,7 @@ export default async function StockPage({
                     <thead className="bg-background text-left text-muted">
                       <tr>
                         <th className="px-4 py-3 font-medium">Item</th>
-                        {locations.map((l) => (
+                        {shownLocations.map((l) => (
                           <th key={l.id} className="px-3 py-3 text-right font-medium" title={l.name}>
                             {l.code}
                           </th>
@@ -217,7 +223,7 @@ export default async function StockPage({
                           editableCodes={isManager ? null : ownCode ? [ownCode] : null}
                           key={it.id}
                           item={it}
-                          locations={locations}
+                          locations={shownLocations}
                           current={Object.fromEntries(byItem.get(it.id) ?? [])}
                         />
                       ))}

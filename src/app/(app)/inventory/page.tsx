@@ -7,6 +7,7 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { InventoryTable, AddItemDialog } from "./inventory-table";
 import { ImportItemsDialog } from "./import-items";
 import { restockAllToFull } from "./actions";
+import { scopeFor, scopeItems } from "@/lib/scope";
 
 export default async function InventoryPage() {
   const profile = await requireProfile();
@@ -25,8 +26,13 @@ export default async function InventoryPage() {
       supabase.from("item_stock").select("item_id, location_id, qty"),
     ]);
 
-  const list = (itemData ?? []) as InventoryItem[];
-  const locations = (locationData ?? []) as Location[];
+  const scope = await scopeFor(supabase, profile);
+  const list = scopeItems((itemData ?? []) as InventoryItem[], scope);
+  const allLocations = (locationData ?? []) as Location[];
+  // Staff only see their own location.
+  const locations = scope
+    ? allLocations.filter((l) => l.id === scope.locationId)
+    : allLocations;
   const stockRows = (stockData ?? []) as Pick<
     ItemStock,
     "item_id" | "location_id" | "qty"
@@ -47,7 +53,7 @@ export default async function InventoryPage() {
         title="Inventory"
         subtitle={
           list.length
-            ? `${list.length} items · ${lowCount} low across ${locations.length} locations`
+            ? `${list.length} items · ${lowCount} low${locations.length === 1 ? ` at ${locations[0].name}` : ` across ${locations.length} locations`}`
             : "Track stock levels across your locations"
         }
         action={
