@@ -378,6 +378,9 @@ async function StockForm({
     current.set(s.item_id, s.qty),
   );
 
+  // Only show items this location carries (it has a stock row for them).
+  const carriedItems = items.filter((it) => current.has(it.id));
+
   return (
     <form action={saveCounts}>
       <input type="hidden" name="location_id" value={location.id} />
@@ -389,7 +392,7 @@ async function StockForm({
       )}
 
       <div className="space-y-8">
-        {groupBySupplier(items).map(([supplier, list]) => (
+        {groupBySupplier(carriedItems).map(([supplier, list]) => (
           <section key={supplier}>
             <h2 className="mb-3 border-b border-border pb-1 text-base font-bold">
               {supplier}

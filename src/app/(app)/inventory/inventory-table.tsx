@@ -8,7 +8,16 @@ import type { InventoryItem, Location } from "@/lib/types";
 import { stockStatus, STATUS_LABEL, STATUS_BADGE } from "@/lib/stock";
 import { createItem, updateItem, deleteItem } from "./actions";
 
-function ItemFields({ item }: { item?: InventoryItem }) {
+export function ItemFields({
+  item,
+  locations,
+  carried,
+}: {
+  item?: InventoryItem;
+  /** When given (edit form), shows "Carried at" checkboxes. */
+  locations?: Location[];
+  carried?: Record<string, number>;
+}) {
   return (
     <>
       <div>
@@ -83,6 +92,32 @@ function ItemFields({ item }: { item?: InventoryItem }) {
           />
         </div>
       </div>
+      {locations && locations.length > 0 && (
+        <div>
+          <label className="label">Carried at</label>
+          <input
+            type="hidden"
+            name="loc_ids"
+            value={locations.map((l) => l.id).join(",")}
+          />
+          <div className="flex flex-wrap gap-3">
+            {locations.map((l) => (
+              <label key={l.id} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name={`carry_${l.id}`}
+                  defaultChecked={carried ? l.id in carried : true}
+                />
+                {l.name}
+              </label>
+            ))}
+          </div>
+          <p className="mt-1 text-xs text-muted">
+            Untick a location that doesn&apos;t sell this item — it will be hidden
+            there.
+          </p>
+        </div>
+      )}
       <p className="text-xs text-muted">
         Stock counts are entered per location on the Stock Count page.
       </p>
@@ -231,13 +266,13 @@ export function InventoryTable({
               >
                 {locations.map((l) => (
                   <span key={l.id}>
-                    <b className="text-foreground">{l.code}</b> {perLoc[l.id] ?? 0}
+                    <b className="text-foreground">{l.code}</b> {perLoc[l.id] ?? "—"}
                   </span>
                 ))}
               </div>
             </Link>
             {isManager && (
-              <div className="mt-1 flex justify-end">
+              <div className="mt-1 flex items-center justify-end gap-3">
                 <FormDialog
                   trigger="✎ Edit"
                   title={`Edit ${item.name}`}
@@ -245,8 +280,20 @@ export function InventoryTable({
                   triggerClassName="text-xs font-semibold text-muted px-2 py-1"
                 >
                   <input type="hidden" name="id" value={item.id} />
-                  <ItemFields item={item} />
+                  <ItemFields
+                    item={item}
+                    locations={locations}
+                    carried={perLoc}
+                  />
                 </FormDialog>
+                <ConfirmButton
+                  action={deleteItem}
+                  confirm={`Delete "${item.name}" everywhere? This removes its counts too.`}
+                  className="text-xs font-semibold text-red px-2 py-1"
+                  hidden={{ id: item.id }}
+                >
+                  🗑 Delete
+                </ConfirmButton>
               </div>
             )}
             </div>
@@ -296,7 +343,7 @@ export function InventoryTable({
                       key={l.id}
                       className="px-3 py-2.5 text-right tabular-nums text-muted"
                     >
-                      {perLoc[l.id] ?? 0}
+                      {perLoc[l.id] ?? "—"}
                     </td>
                   ))}
                   {!single && (
@@ -324,7 +371,11 @@ export function InventoryTable({
                           triggerClassName="btn-secondary px-3 py-1.5"
                         >
                           <input type="hidden" name="id" value={item.id} />
-                          <ItemFields item={item} />
+                          <ItemFields
+                            item={item}
+                            locations={locations}
+                            carried={perLoc}
+                          />
                         </FormDialog>
                         <ConfirmButton
                           action={deleteItem}

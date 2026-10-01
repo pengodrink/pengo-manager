@@ -39,5 +39,8 @@ export function scopeItems<T extends { id: string; current_qty: number }>(
   scope: OwnScope | null,
 ): T[] {
   if (!scope) return items;
-  return items.map((i) => ({ ...i, current_qty: scope.qty.get(i.id) ?? 0 }));
+  // Items this location doesn't carry have no stock row — hide them.
+  return items
+    .filter((i) => scope.qty.has(i.id))
+    .map((i) => ({ ...i, current_qty: scope.qty.get(i.id) ?? 0 }));
 }

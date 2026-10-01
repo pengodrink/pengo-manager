@@ -10,6 +10,10 @@ import {
   needToOrder,
 } from "@/lib/stock";
 import { LocationCard } from "./location-card";
+import { FormDialog } from "@/components/form-dialog";
+import { ConfirmButton } from "@/components/confirm-button";
+import { ItemFields } from "../inventory-table";
+import { updateItem, deleteItem } from "../actions";
 
 export default async function ItemDetailPage({
   params,
@@ -54,7 +58,36 @@ export default async function ItemDetailPage({
 
   return (
     <div className="space-y-6">
-      <BackButton fallback="/inventory" />
+      <div className="flex items-center justify-between">
+        <BackButton fallback="/inventory" />
+        {profile.role === "manager" && (
+          <div className="flex items-center gap-2">
+            <FormDialog
+              trigger="✎ Edit"
+              title={`Edit ${i.name}`}
+              action={updateItem}
+              triggerClassName="btn-secondary px-3 py-1.5"
+            >
+              <input type="hidden" name="id" value={i.id} />
+              <ItemFields
+                item={i}
+                locations={allLocations}
+                carried={Object.fromEntries(
+                  [...stock.entries()].map(([k, v]) => [k, v.qty]),
+                )}
+              />
+            </FormDialog>
+            <ConfirmButton
+              action={deleteItem}
+              confirm={`Delete "${i.name}" everywhere? This removes its counts too.`}
+              className="btn-danger px-3 py-1.5"
+              hidden={{ id: i.id, then: "list" }}
+            >
+              🗑 Delete
+            </ConfirmButton>
+          </div>
+        )}
+      </div>
 
       <div className="card p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -137,6 +170,14 @@ export default async function ItemDetailPage({
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {locations.map((l) => {
             const s = stock.get(l.id);
+            if (!s) {
+              return (
+                <div key={l.id} className="card bg-background p-5 text-muted">
+                  <div className="text-sm">{l.name}</div>
+                  <div className="mt-1 font-semibold">Not carried here</div>
+                </div>
+              );
+            }
             return (
               <LocationCard
                 key={l.id}

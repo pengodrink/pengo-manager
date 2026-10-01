@@ -54,7 +54,8 @@ export default async function DashboardPage() {
     return (
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {locations.map((l) => {
-          const q = m?.get(l.id) ?? 0;
+          if (!m?.has(l.id)) return null; // not carried at this location
+          const q = m.get(l.id) ?? 0;
           const st = stockStatus(q, i.low_stock_threshold);
           return (
             <span

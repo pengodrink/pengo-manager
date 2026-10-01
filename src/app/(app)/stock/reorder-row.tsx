@@ -31,7 +31,9 @@ export function ReorderRow({
   function save() {
     const fd = new FormData();
     fd.set("item_id", item.id);
-    for (const l of locations) fd.set(`qty_${l.id}`, vals[l.id] ?? "0");
+    for (const l of locations) {
+      if (l.id in current) fd.set(`qty_${l.id}`, vals[l.id] ?? "0");
+    }
     startTransition(async () => {
       await saveItemCounts(fd);
       setSaved(true);
@@ -50,7 +52,12 @@ export function ReorderRow({
           <span className="ml-2 text-xs text-muted">{item.category}</span>
         )}
       </td>
-      {locations.map((l) => (
+      {locations.map((l) =>
+        !(l.id in current) ? (
+          <td key={l.id} className="px-2 py-2 text-center text-muted">
+            —
+          </td>
+        ) : (
         <td key={l.id} className="px-2 py-2">
           <input
             type="number"
@@ -65,7 +72,8 @@ export function ReorderRow({
             aria-label={`${item.name} at ${l.name}`}
           />
         </td>
-      ))}
+        ),
+      )}
       <td className="px-3 py-2.5 text-right">
         <span
           className={`font-bold tabular-nums ${
