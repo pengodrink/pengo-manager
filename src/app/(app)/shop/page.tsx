@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageHeader } from "@/components/ui";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
@@ -32,6 +33,11 @@ export default async function ShopPage() {
       <PageHeader
         title="Shopping List"
         subtitle="Pick the vendor you're at — see only what you need to buy"
+        action={
+          <Link href="/shop/report" className="btn-primary">
+            📄 Generate report
+          </Link>
+        }
       />
       <ShoppingList items={items} />
     </div>
