@@ -24,7 +24,7 @@ const TIERS: Record<1 | 2 | 3, { title: string; hint: string; tone: string }> = 
   },
   2: {
     title: "🟠 Out at some locations",
-    hint: "Still in stock elsewhere — restock the empty locations.",
+    hint: "Restock the locations that ran out.",
     tone: "text-amber-600",
   },
   3: {
@@ -73,7 +73,9 @@ export default async function ShopReportPage() {
     const outLocs = perLoc.filter((p) => p.qty <= 0).map((p) => p.loc);
 
     let tier: 1 | 2 | 3 | null = null;
-    if (total <= 0) tier = 1;
+    // "Everywhere" only means something for items carried at 2+ locations;
+    // a one-location item that runs out is listed as out at that location.
+    if (total <= 0 && perLoc.length > 1) tier = 1;
     else if (outLocs.length > 0) tier = 2;
     else if (total <= item.low_stock_threshold) tier = 3;
     if (!tier) continue;
