@@ -78,8 +78,11 @@ export default async function DashboardPage() {
   const lowStock = items.filter(
     (i) => i.current_qty > 0 && i.current_qty <= i.low_stock_threshold,
   );
-  // Out-of-stock first (most urgent), then low.
-  const needsAttention = [...outOfStock, ...lowStock];
+  // Out-of-stock first (most urgent), then low. Le Chef bakery items are
+  // left out of this list (they still show in the banners above).
+  const needsAttention = [...outOfStock, ...lowStock].filter(
+    (i) => i.supplier?.trim().toLowerCase() !== "le chef",
+  );
   const doneIds = new Set(completions.map((c) => c.task_id));
   const remainingTasks = tasks.filter((t) => !doneIds.has(t.id));
 
