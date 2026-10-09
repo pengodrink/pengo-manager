@@ -63,6 +63,7 @@ export default async function ShopReportPage() {
 
   const rows: Row[] = [];
   for (const item of (itemData ?? []) as InventoryItem[]) {
+    if (item.supplier?.trim().toLowerCase() === "le chef") continue; // not on this report
     const m = stock.get(item.id);
     if (!m || m.size === 0) continue; // not carried at any location you can see
     const perLoc = locs
